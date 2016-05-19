@@ -77,7 +77,13 @@ def import_mesh(fin=None):
         sys.exit(1)
     return meshObject
 
-def export_mesh(fout=None, texture=None):
+def export_mesh(obj_src=None, fout=None, texture=None):
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    obj_src.select = True
+    bpy.context.scene.objects.active = obj_src
+
     fprefix, mScale, mUp, fext = pylirious.parse_filename(fout)
     rc = 0
     
@@ -144,7 +150,7 @@ def bevel():
 def smart_uv_project():
     ...
 
-def boolean(source=None,  operation='+', target=None, output=None):
+def boolean(obj_src=None,  operation='+', obj_trgt=None):
     """Perform a boolean operation on a source mesh with a target mesh.
     
     The result of the operation will be exported to the output file.
@@ -165,11 +171,11 @@ def boolean(source=None,  operation='+', target=None, output=None):
     
     print(
           '\nPerforming boolean:\n'
-          '%s %s %s = %s\n' % (source, operation, target, output)
+          '%s %s %s\n' % (obj_src.name, operation, obj_trgt.name)
           )
     
-    obj_src = import_mesh(source)
-    obj_trgt = import_mesh(target)
+    #obj_src = import_mesh(source)
+    #obj_trgt = import_mesh(target)
     print('obj_src: %s' % obj_src.name)
     print('obj_trgt: %s' % obj_trgt.name)    
     
@@ -200,8 +206,9 @@ def boolean(source=None,  operation='+', target=None, output=None):
     #bpy.ops.object.select_all(action='DESELECT')
     #obj_src.select = True
     #bpy.context.scene.objects.active = obj_src
-    rc = export_mesh(output, texture=False)
-    return rc
+    #rc = export_mesh(output, texture=False)
+    #return rc
+    return None
 
 def begin():
     """Start of new Blender script; set the scene and clear existing objects"""
