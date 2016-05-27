@@ -30,17 +30,17 @@ def begin(s='MLTEMP_blender_default.py'):
     return None
 
 def import_mesh(fin=None, s='MLTEMP_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirios and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     sf = open(s,'a')
     if return_vars is not None:
         sf.write('%s = pylirious.bpylirious.import_mesh("%s")\n' % (return_vars, fin))
     else:
         sf.write('pylirious.bpylirious.import_mesh("%s")\n' % (fin))
     sf.close ()
-    return None
+    return return_vars
 
 def export_mesh(obj_src=None, fout=None, texture=None, s='MLTEMP_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirios and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     sf = open(s,'a')
     if return_vars is not None:
         sf.write('%s = pylirious.bpylirious.export_mesh(%s, "%s", %s)\n' % (
@@ -49,11 +49,11 @@ def export_mesh(obj_src=None, fout=None, texture=None, s='MLTEMP_blender_default
         sf.write('pylirious.bpylirious.export_mesh(%s, "%s", %s)\n' % (
             obj_src, fout, texture))
     sf.close ()
-    return None
+    return return_vars
 
 def boolean(obj_src=None,  operation='+', obj_trgt=None,
             s='MLTEMP_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirios and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     sf = open(s,'a')
     if return_vars is not None:
         sf.write('%s = pylirious.bpylirious.boolean(%s, "%s", %s)\n' % (
@@ -62,7 +62,7 @@ def boolean(obj_src=None,  operation='+', obj_trgt=None,
         sf.write('pylirious.bpylirious.boolean(%s, "%s", %s)\n' % (
             obj_src, operation, obj_trgt))
     sf.close ()
-    return None
+    return return_vars
 
 def command(command=None, s='MLTEMP_blender_default.py'):
     """ Write the command verbatim to the script file"""

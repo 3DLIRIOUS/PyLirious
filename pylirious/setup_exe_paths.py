@@ -36,11 +36,15 @@ def setup_exe_paths():
         if shutil.which('blender') is None:
             if platform.system() == 'Windows':
                 add2path('C:\\Program Files\\Blender Foundation\\Blender')
+        if shutil.which('meshmixer') is None:
+            if platform.system() == 'Windows':
+                add2path('C:\\Program Files\\Autodesk\\Meshmixer')
     else:
         add2path('C:\\Program Files\\VCG\\MeshLab')
         add2path('C:\\Program Files\\OpenSCAD')
         add2path('C:\\Program Files\\admesh')
         add2path('C:\\Program Files\\Blender Foundation\\Blender')
+        add2path('C:\\Program Files\\Autodesk\\Meshmixer')
 if __name__ == "__main__":
     setup_exe_paths()
 

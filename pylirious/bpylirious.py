@@ -1,47 +1,23 @@
-# This script is an example of how you can run blender from the command line
-# (in background mode with no interface) to automate tasks, in this example it
-# creates a text object, camera and light, then renders and/or saves it.
-# This example also shows how you can parse command line options to scripts.
-#
-# Example usage for this test.
-#  blender --background --factory-startup --python $HOME/background_job.py -- \
-#          --text="Hello World" \
-#          --render="/tmp/hello" \
-#          --save="/tmp/hello.blend"
-#
-# Notice:
-# '--factory-startup' is used to avoid the user default settings from
-#                     interfering with automated scene generation.
-#
-# '--' causes blender to ignore all following arguments so python can use them.
-#
-# See blender --help for details.
+""" Pylirious's Blender Python 3 module
 
-
-
-"""Command line:
-blender_path = "U:\\My Documents\\No.Backup.Zone\\Apps\\PA\\PortableApps\\BlenderPortable\\BlenderPortable.exe"
-
-In cmd.exe:
-set blender_path="U:\\My Documents\\No.Backup.Zone\\Apps\\PA\\PortableApps\\BlenderPortable\\App\\Blender64\\blender.exe"
-
-%blender_path% --background --factory-startup --python bld_union.py
+Use within blender
 """
 
+# Blender modules
 import bpy
 import bmesh
+
+# Built-in modules
 import os
 import sys
 import argparse
 import inspect
 
-# Find the path of this script and add it to python's path.
-this_scriptpath = os.path.dirname(os.path.realpath(inspect.getsourcefile(lambda:0)))
-sys.path.append(this_scriptpath)
-import pylirious
+# Modules installed via pip
+from . import filename
 
 def import_mesh(fin=None):
-    fprefix, mScale, mUp, fext = pylirious.parse_filename(fin)
+    fprefix, mScale, mUp, fext = filename.parse(fin)
     
     if mUp is not None:
         up = mUp.upper()
@@ -84,7 +60,7 @@ def export_mesh(obj_src=None, fout=None, texture=None):
     obj_src.select = True
     bpy.context.scene.objects.active = obj_src
 
-    fprefix, mScale, mUp, fext = pylirious.parse_filename(fout)
+    fprefix, mScale, mUp, fext = filename.parse(fout)
     rc = 0
     
     if mUp is not None:

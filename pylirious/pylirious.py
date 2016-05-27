@@ -1,9 +1,11 @@
-"""Pylirious module"""
-
 #!/usr/bin/python3
-# pylirious.py
+"""Pylirious module
 
-#Builtin modules
+Miscellaneous functions to work with 3D models in Python 3. 
+
+"""
+
+# Built-in modules
 import os
 import sys
 import inspect
@@ -11,8 +13,11 @@ import subprocess
 import unicodedata
 import string
 
-#Local modules
+# Modules installed via pip
 import meshlabxml as mlx
+
+# Sub-modules
+from . import filename
 
 def parse_filename(fbasename, runlogname = None):
     """ Parse filename, spltting it up into the filename
@@ -112,32 +117,35 @@ def slugify(fprefix):
     cleanedFilename = unicodedata.normalize('NFKD', fprefix) #.encode('ascii', 'ignore')
     return ''.join(c for c in cleanedFilename if c in validFilenameChars)
 
-def render_scad():
+"""def render_scad():
     ...
 
 def run_admesh():
-    ...
+    ..."""
 
 def swapYZ(fin, runlogname=None):
-    fprefix, mScale, mUp, fext = check_metadata(fin)
-    if mUp == 'Y': # Y to Z; rotate 90d about X
+    """ Swap a mesh 'Up' direction
+    
+    Requires metadata to know what the current 'Up' direction is.
+    
+    """
+    fprefix, mScale, mUp, fext = filename.check_metadata(fin)
+    if mUp == 'Y': # Y to Z: rotate 90d about X
         mUp = 'Z'
         angle = 90
-    else : # Z to Y; roate -90 about X
+    else : # Z to Y: rotate -90d about X
         mUp = 'Y'
         angle = -90
 
-    fout = fprefix + '(' + mScale + mUp + ').' + fext
-    mlLog = 'MLTEMP_swapYZ_mlx_lf.txt'
-    sf = 'MLTEMP_swapYZ.mlx'
+    fout = '%s(%s%s).%s' % (fprefix, mScale, mUp, fext)
+    #mlLog = 'MLTEMP_swapYZ_mlx_lf.txt'
+    s = 'MLTEMP_swapYZ.mlx'
 
-    mlx.begin(sf, i=fin)
-    mlx.rotate(sf, 'x', angle)
-    mlx.end(sf)
-
-    mlRC = mlx.run(log=mlLog, i=fin, o=fout,
-                          s=sf, runlogname=runlogname)
-    return mlRC, fout
+    mlx.begin(s, i=fin)
+    mlx.rotate(s, 'x', angle)
+    mlx.end(s)
+    mlx.run(i=fin, o=fout, s=s, runlogname=runlogname)
+    return fout
 
 def blend( moduleFunction=None, runlogname=None, modulePath=None, cmd=None):
     """Run a function inside a Blender Python module and pass it parameters.
