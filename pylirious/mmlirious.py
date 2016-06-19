@@ -45,9 +45,14 @@ def end(remote):
 
 
 def import_mesh(remote, file_in=None):
-    object_id = mm.scene.append_objects_from_file(remote, file_in)
-    print('object ID = %s' % object_id)
-    return object_id
+    """
+
+    mesh_object: the object ID of the mesh object
+    """
+
+    mesh_object = mm.scene.append_objects_from_file(remote, file_in)
+    print('object ID = %s' % mesh_object)
+    return mesh_object
 
 
 def open_mix(remote, file_in=None):
@@ -55,14 +60,14 @@ def open_mix(remote, file_in=None):
     return None
 
 
-def export_mesh(remote, object_id, file_out=None):
-    mm.scene.select_objects(remote, object_id)
+def export_mesh(remote, mesh_object, file_out=None):
+    mm.scene.select_objects(remote, mesh_object)
     mm.export_mesh(remote, file_out)
     return None
 
 
-def hollow(remote, object_id, offset=2,
-           solidResolution=128, meshResolution=128):
+def hollow(remote, mesh_object, offset=2,
+           solid_resolution=128, mesh_resolution=128):
     """ Hollow mesh
 
     offsetDistance 	float
@@ -75,23 +80,23 @@ def hollow(remote, object_id, offset=2,
     holesPerComponent 	integer
 
     """
-    mm.scene.select_objects(remote, object_id)
+    mm.scene.select_objects(remote, mesh_object)
     mm.begin_tool(remote, 'hollow')
     mm.set_toolparam(remote, 'offsetDistanceWorld', offset)
     mm.set_toolparam(
         remote,
         'solidResolution',
-        solidResolution)  # Solid Accuracy
-    mm.set_toolparam(remote, 'meshResolution', meshResolution)  # Mesh Density
+        solid_resolution)  # Solid Accuracy
+    mm.set_toolparam(remote, 'meshResolution', mesh_resolution)  # Mesh Density
     mm.tool_utility_command(remote, 'update')
     mm.accept_tool(remote)
     return None
 
 
-def makeSolid(remote, object_id, offset=None, minThickness=None,
-              edgeCollapseThresh=None, solidType=None,
-              solidResolution=None, meshResolution=None,
-              closeHoles=True, transferFaceGroups=False):
+def make_solid(remote, mesh_object, offset=None, min_thickness=None,
+               edge_collapse_thresh=None, solid_type=None,
+               solid_resolution=None, mesh_resolution=None,
+               close_holes=True, transfer_face_groups=False):
     """ Make Solid tool
     offsetDistance : float ; default 0
     offsetDistanceWorld : float
@@ -108,36 +113,45 @@ def makeSolid(remote, object_id, offset=None, minThickness=None,
     closeHoles : boolean ; default True
     transferFaceGroups : boolean ; default False
 
+    http://www.mmmanual.com/make-solid/
+    Make Solid approximates your object with small cubes (voxels).
+    This approximation actually happens twice. First we voxelize
+    the shape using solid_resolution as the sampling rate. Then we
+    use a second set of voxels to create a mesh of the first voxel
+    approximation; mesh_resolution is the sampling rate of this second
+    voxelization. These sampling rates can be the same, but they do
+    not have to be.
+
     """
-    mm.scene.select_objects(remote, object_id)
+    mm.scene.select_objects(remote, mesh_object)
     mm.begin_tool(remote, 'makeSolid')
 
     if offset is not None:
         mm.set_toolparam(remote, 'offsetDistanceWorld', offset)
-    if minThickness is not None:
-        mm.set_toolparam(remote, 'minThicknessWorld', minThickness)
-    if edgeCollapseThresh is not None:
-        mm.set_toolparam(remote, 'edgeCollapseThresh', edgeCollapseThresh)
-    if solidType is not None:
-        mm.set_toolparam(remote, 'solidType', solidType)
-    if solidResolution is not None:
+    if min_thickness is not None:
+        mm.set_toolparam(remote, 'minThicknessWorld', min_thickness)
+    if edge_collapse_thresh is not None:
+        mm.set_toolparam(remote, 'edgeCollapseThresh', edge_collapse_thresh)
+    if solid_type is not None:
+        mm.set_toolparam(remote, 'solidType', solid_type)
+    if solid_resolution is not None:
         mm.set_toolparam(
             remote,
             'solidResolution',
-            solidResolution)  # Solid Accuracy
-    if meshResolution is not None:
+            solid_resolution)  # Solid Accuracy
+    if mesh_resolution is not None:
         mm.set_toolparam(
             remote,
             'meshResolution',
-            meshResolution)  # Mesh Density
-    mm.set_toolparam(remote, 'closeHoles', closeHoles)
-    mm.set_toolparam(remote, 'transferFaceGroups', transferFaceGroups)
+            mesh_resolution)  # Mesh Density
+    mm.set_toolparam(remote, 'closeHoles', close_holes)
+    mm.set_toolparam(remote, 'transferFaceGroups', transfer_face_groups)
 
     mm.tool_utility_command(remote, 'update')
     mm.accept_tool(remote)
-    new_object_id = mm.scene.list_selected_objects(remote)
-    print('new_object_id = %s' % new_object_id)
-    return new_object_id
+    new_mesh_object = mm.scene.list_selected_objects(remote)
+    print('new_mesh_object = %s' % new_mesh_object)
+    return new_mesh_object
 
 
 def scratch(remote):

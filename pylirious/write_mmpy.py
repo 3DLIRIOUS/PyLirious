@@ -2,19 +2,71 @@
 
 import os
 import sys
+#import inspect
 import subprocess
 import time
-from glob import glob
+
+from meshlabxml.util import delete_all
+
+
+def write_mmpyfunc(return_vars=None, script=None, function=None, **kwargs):
+    # Determine calling function automatically:
+    #   inspect.currentframe().f_code.co_name
+    #   function = inspect.stack()[0][3]
+    #   Faster just to hardcode name
+    """print('In write_mmpyfunc')
+    print('script = %s' % script)
+    print('return_vars = %s' % return_vars)
+    print('function = %s' % function)
+    print('kwargs = %s' % kwargs)"""
+
+    script_file = open(script, 'a')
+    if return_vars is not None:
+        script_file.write(
+            '\n%s = mmlirious.%s(remote, ' %
+            (return_vars, function))
+    else:
+        script_file.write('\nmmlirious.%s(remote, ' % (function))
+    script_file.close()
+
+    filename_args = ['file_in', 'file_out']
+    str_args = []
+
+    script_file = open(script, 'a')
+    if kwargs is not None:
+        first = True
+        for key, value in kwargs.items():
+            if not first:
+                script_file.write(', ')
+            # Need to quote strings
+            if key in filename_args:
+                # Use raw literal strings; needed for Windows paths.
+                script_file.write('%s=r"%s"' % (key, value))
+            elif key in str_args:
+                script_file.write('%s="%s"' % (key, value))
+            else:
+                script_file.write('%s=%s' % (key, value))
+            first = False
+    script_file.close()
+
+    # Write closing parentheses
+    script_file = open(script, 'a')
+    script_file.write(')\n')
+    script_file.close()
+    return return_vars
 
 
 def begin(script='TEMP3D_mix_default.py'):
     script_file = open(script, 'w')
     script_file.write('\n'.join([
-        '#! python 2',
-        '""" MeshMixer Python 2.7 script created by pylirious.mix"""\n',
+        '#! python 2.7',
+        '""" MeshMixer Python 2.7 script created by write_mmpy"""\n',
+        'from __future__ import print_function',
+        'from __future__ import division',
         'import os',
         'import sys',
-        'import inspect',
+        #'import inspect',
+        '',
         'from pylirious import mmlirious',
         '\n']))
     script_file.write('remote = mmlirious.begin()\n')
@@ -24,59 +76,48 @@ def begin(script='TEMP3D_mix_default.py'):
 
 def end(script='TEMP3D_mix_default.py'):
     script_file = open(script, 'a')
-    script_file.write('mmlirious.end(remote)\n')
+    script_file.write('\nmmlirious.end(remote)\n')
     script_file.close()
     return None
 
 
-def import_mesh(file_in=None, script='TEMP3D_mix_default.py',
-                return_vars=None):
+def open_mix(return_vars=None, script='TEMP3D_mix_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write(
-            '%s = mmlirious.import_mesh(remote, "%s")\n' %
-            (return_vars, file_in))
-    else:
-        script_file.write('mmlirious.import_mesh(remote, "%s")\n' % (file_in))
-    script_file.close()
+    function = 'open_mix'
+    write_mmpyfunc(return_vars=return_vars, script=script,
+                   function=function, **kwargs)
     return return_vars
 
 
-def export_mesh(object_id=None, file_out=None,
-                script='TEMP3D_mix_default.py', return_vars=None):
+def import_mesh(return_vars=None, script='TEMP3D_mix_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = mmlirious.export_mesh(remote, %s, "%s")\n' % (
-            return_vars, object_id, file_out))
-    else:
-        script_file.write('mmlirious.export_mesh(remote, %s, "%s")\n' % (
-            object_id, file_out))
-    script_file.close()
+    function = 'import_mesh'
+    write_mmpyfunc(return_vars=return_vars, script=script,
+                   function=function, **kwargs)
     return return_vars
 
 
-def makeSolid(object_id=None, offset=None, minThickness=None,
-              edgeCollapseThresh=None, solidType=None,
-              solidResolution=None, meshResolution=None,
-              closeHoles=True, transferFaceGroups=False,
-              script='TEMP3D_mix_default.py', return_vars=None):
+def export_mesh(return_vars=None, script='TEMP3D_mix_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write(
-            '%s = mmlirious.makeSolid(remote, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n' % (
-                return_vars, object_id, offset, minThickness,
-                edgeCollapseThresh, solidType, solidResolution,
-                meshResolution, closeHoles, transferFaceGroups))
-    else:
-        script_file.write(
-            'mmlirious.makeSolid(remote, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n' % (
-                object_id, offset, minThickness,
-                edgeCollapseThresh, solidType, solidResolution,
-                meshResolution, closeHoles, transferFaceGroups))
-    script_file.close()
+    function = 'export_mesh'
+    write_mmpyfunc(return_vars=return_vars, script=script,
+                   function=function, **kwargs)
+    return return_vars
+
+
+def hollow(return_vars=None, script='TEMP3D_mix_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'hollow'
+    write_mmpyfunc(return_vars=return_vars, script=script,
+                   function=function, **kwargs)
+    return return_vars
+
+
+def make_solid(return_vars=None, script='TEMP3D_mix_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'make_solid'
+    write_mmpyfunc(return_vars=return_vars, script=script,
+                   function=function, **kwargs)
     return return_vars
 
 
@@ -109,6 +150,7 @@ def run(script='TEMP3D_mix_default.py', log=None):
             # Find position in log_file before launching MeshMixer
             start_pos = log_file.tell()
         # Launch MeshMixer
+        # TODO: experiment with passing current directory to meshmixer
         mm_proc = subprocess.Popen(['meshmixer'], stdout=log_file,
                                    stderr=log_file, universal_newlines=True)
 
@@ -181,13 +223,3 @@ def run(script='TEMP3D_mix_default.py', log=None):
         log_file.write('MeshMixer return code = %s\n\n' % return_code)
         log_file.close()
     return return_code
-
-
-def delete_all(filename):
-    """delete files in the current directory that match a pattern.
-
-    Intended for temp files, e.g. mlx.delete('TEMP3D*').
-
-    """
-    for fread in glob(filename):
-        os.remove(fread)

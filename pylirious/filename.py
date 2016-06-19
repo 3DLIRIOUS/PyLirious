@@ -81,8 +81,8 @@ def check_metadata(fbasename, log=None):
               '\"-10\" means 1/10th scale)\n',
               '  * Decimal value with period separator, (e.g. \"0.1\"',
               'for 1/10th scale)\n')
-        scale_meta = input('Hit enter to accept the default',
-                           '(\"%s\"): ' % scale_meta_default)
+        scale_meta = input(' '.join(['Hit enter to accept the default',
+                           '(\"%s\"): ' % scale_meta_default]))
         if scale_meta == "":
             scale_meta = scale_meta_default
 
@@ -97,8 +97,8 @@ def check_metadata(fbasename, log=None):
         elif up_meta == 'Z':
             break
         print('Enter the mesh \"up\" axis. Valid values are Y or Z.\n')
-        up_meta = input('Hit enter to accept the default',
-                        '(\"%s\"): ' % up_meta_default)
+        up_meta = input(' '.join(['Hit enter to accept the default',
+                        '(\"%s\"): ' % up_meta_default]))
         if up_meta == "":
             up_meta = up_meta_default
 

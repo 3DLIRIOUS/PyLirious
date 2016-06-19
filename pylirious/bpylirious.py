@@ -21,6 +21,16 @@ import math
 from . import filename
 
 
+def begin():
+    """Start of new Blender script; set the scene and clear existing objects"""
+    scene = bpy.context.scene
+    # Clear existing objects.
+    scene.camera = None
+    for mesh_object in scene.objects:
+        scene.objects.unlink(mesh_object)
+    return None
+
+
 def import_mesh(file_in=None):
     fprefix, scale_meta, up_meta, fext = filename.parse(file_in)
 
@@ -235,7 +245,8 @@ def separate(mesh_object):
     # How to select subsequent objects and assign them to variables?
 
 
-def plane_cut(mesh_object=None, axis='z', offset=0.0):
+def plane_cut(mesh_object=None, axis='z', offset=0.0, use_fill=True,
+              clear_inner=True, clear_outer=False, threshold=0.0001):
     """ Plane cut using  the bisect operator """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
@@ -262,10 +273,10 @@ def plane_cut(mesh_object=None, axis='z', offset=0.0):
     bpy.ops.mesh.bisect(
         plane_co=plane_co,
         plane_no=plane_no,
-        use_fill=True,
-        clear_inner=True,
-        clear_outer=False,
-        threshold=0.0001,
+        use_fill=use_fill,
+        clear_inner=clear_inner,
+        clear_outer=clear_outer,
+        threshold=threshold,
         xstart=0,
         xend=0,
         ystart=0,
@@ -374,11 +385,11 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
 
 
 def bevel():
-    ...
+    pass
 
 
 def smart_uv_project():
-    ...
+    pass
 
 
 def boolean(obj_src=None, operation='+', obj_trgt=None):
@@ -439,16 +450,6 @@ def boolean(obj_src=None, operation='+', obj_trgt=None):
     #bpy.context.scene.objects.active = obj_src
     #return_code = export_mesh(output, texture=False)
     # return return_code
-    return None
-
-
-def begin():
-    """Start of new Blender script; set the scene and clear existing objects"""
-    scene = bpy.context.scene
-    # Clear existing objects.
-    scene.camera = None
-    for mesh_object in scene.objects:
-        scene.objects.unlink(mesh_object)
     return None
 
 

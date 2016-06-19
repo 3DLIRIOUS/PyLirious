@@ -3,7 +3,49 @@
 import os
 import sys
 import subprocess
-from glob import glob
+
+from meshlabxml.util import delete_all
+
+
+def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
+    # Determine calling function automatically:
+    #   inspect.currentframe().f_code.co_name
+    #   function = inspect.stack()[0][3]
+    #   Faster just to hardcode name
+    """print('In write_mmpyfunc')
+    print('script = %s' % script)
+    print('return_vars = %s' % return_vars)
+    print('function = %s' % function)
+    print('kwargs = %s' % kwargs)"""
+
+    script_file = open(script, 'a')
+    if return_vars is not None:
+        script_file.write('\n%s = bpylirious.%s(' % (return_vars, function))
+    else:
+        script_file.write('\nbpylirious.%s(' % (function))
+    script_file.close()
+
+    str_args = ['file_in', 'file_out', 'axis', 'operation']
+
+    script_file = open(script, 'a')
+    if kwargs is not None:
+        first = True
+        for key, value in kwargs.items():
+            if not first:
+                script_file.write(', ')
+            # Need to quote strings
+            if key in str_args:
+                script_file.write('%s="%s"' % (key, value))
+            else:
+                script_file.write('%s=%s' % (key, value))
+            first = False
+    script_file.close()
+
+    # Write closing parentheses
+    script_file = open(script, 'a')
+    script_file.write(')\n')
+    script_file.close()
+    return return_vars
 
 
 def begin(script='TEMP3D_blender_default.py'):
@@ -25,129 +67,79 @@ def begin(script='TEMP3D_blender_default.py'):
     return None
 
 
-def import_mesh(file_in=None, script='TEMP3D_blender_default.py',
-                return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write(
-            '%s = bpylirious.import_mesh("%s")\n' %
-            (return_vars, file_in))
-    else:
-        script_file.write('bpylirious.import_mesh("%s")\n' % (file_in))
-    script_file.close()
+def import_mesh(return_vars=None,
+                script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'import_mesh'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def export_mesh(mesh_object=None, file_out=None, texture=None,
-                script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.export_mesh(%s, "%s", %s)\n' % (
-            return_vars, mesh_object, file_out, texture))
-    else:
-        script_file.write('bpylirious.export_mesh(%s, "%s", %s)\n' % (
-            mesh_object, file_out, texture))
-    script_file.close()
+def export_mesh(return_vars=None,
+                script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'export_mesh'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def rotate(mesh_object=None, axis='z', angle=0.0, apply=True,
-           script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.rotate(%s, "%s", %s, %s)\n' % (
-            return_vars, mesh_object, axis, angle, apply))
-    else:
-        script_file.write('bpylirious.rotate(%s, "%s", %s)\n' % (
-            mesh_object, axis, angle))
-    script_file.close()
+def rotate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'rotate'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def translate(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True,
-              script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.translate(%s, %s, %s)\n' % (
-            return_vars, mesh_object, value, apply))
-    else:
-        script_file.write('bpylirious.translate(%s, %s, %s)\n' % (
-            mesh_object, value, apply))
-    script_file.close()
+def translate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'translate'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def join(objects=None, script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.join(%s)\n' % (
-            return_vars, objects))
-    else:
-        script_file.write('bpylirious.join(%s)\n' % (
-            objects))
-    script_file.close()
+def join(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'join'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def plane_cut(mesh_object=None, axis='z', offset=0.0,
-              script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.plane_cut(%s, "%s", %s)\n' % (
-            return_vars, mesh_object, axis, offset))
-    else:
-        script_file.write('bpylirious.plane_cut(%s, "%s", %s)\n' % (
-            mesh_object, axis, offset))
-    script_file.close()
+def plane_cut(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'plane_cut'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6,
-                   script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.extrude_bottom(%s, %s, %s)\n' % (
-            return_vars, mesh_object, threshold, distance))
-    else:
-        script_file.write('bpylirious.extrude_bottom(%s, %s, %s)\n' % (
-            mesh_object, threshold, distance))
-    script_file.close()
+def extrude_bottom(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'extrude_bottom'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
-                  radius=1, angle=1, distance=6,
-                  script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.extrude_plane(%s, %s, %s, %s, %s)\n' % (
-            return_vars, mesh_object, center, radius, angle, distance))
-    else:
-        script_file.write('bpylirious.extrude_plane(%s, %s, %s, %s, %s)\n' % (
-            mesh_object, center, radius, angle, distance))
-    script_file.close()
+def extrude_plane(return_vars=None,
+                  script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'extrude_plane'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
-def boolean(obj_src=None, operation='+', obj_trgt=None,
-            script='TEMP3D_blender_default.py', return_vars=None):
-    """ Run the same function in bpylirious and return return_vars"""
-    script_file = open(script, 'a')
-    if return_vars is not None:
-        script_file.write('%s = bpylirious.boolean(%s, "%s", %s)\n' % (
-            return_vars, obj_src, operation, obj_trgt))
-    else:
-        script_file.write('bpylirious.boolean(%s, "%s", %s)\n' % (
-            obj_src, operation, obj_trgt))
-    script_file.close()
+def boolean(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'boolean'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
     return return_vars
 
 
@@ -160,7 +152,7 @@ def command(cmd=None, script='TEMP3D_blender_default.py'):
 
 def run(script='TEMP3D_blender_default.py', log=None):
     """Run Blender in a subprocess and execute script.
-    
+
     """
     cmd = 'blender --background --factory-startup --python %s' % script
     if log is not None:
@@ -217,13 +209,3 @@ def run(script='TEMP3D_blender_default.py', log=None):
         log_file.write('blender return code = %s\n\n' % return_code)
         log_file.close()
     return return_code
-
-
-def delete_all(filename):
-    """delete files in the current directory that match a pattern.
-
-    Intended for temp files, e.g. mlx.delete('TEMP3D*').
-
-    """
-    for fread in glob(filename):
-        os.remove(fread)

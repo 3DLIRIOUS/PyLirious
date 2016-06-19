@@ -228,7 +228,7 @@ def setup(sys_argv):
         log (str): filename of the log file
 
     """
-    fpath = os.path.dirname(sys_argv[1])
+    fpath = os.path.dirname(os.path.abspath(sys.argv[1]))
     os.chdir(fpath)
     fbasename = os.path.basename(sys_argv[1])
     scriptname = os.path.basename(sys.argv[0])
@@ -242,7 +242,3 @@ def setup(sys_argv):
     log_file.write('fbasename = %s\n\n' % fbasename)
     log_file.close()
     return fpath, fbasename, scriptname, log
-
-
-def write_pyfunc(return_val=None, function=None, **kargs):
-    pass
