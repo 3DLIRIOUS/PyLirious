@@ -1,0 +1,3 @@
+[submodule "pylirious/mm-api"]
+	path = pylirious/mm-api
+	url = https://github.com/3DLIRIOUS/mm-api.git
