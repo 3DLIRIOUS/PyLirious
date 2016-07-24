@@ -179,8 +179,8 @@ def run(script='TEMP3D_mix_default.py', log=None):
                                       stderr=log_file, universal_newlines=True)
         # return_code = 1 # for testing
         mm_proc.terminate()
-        log_file.close()
-
+        if log is not None:
+            log_file.close()
         if return_code == 0:
             break
         else:

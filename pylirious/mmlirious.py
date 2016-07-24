@@ -18,13 +18,13 @@ THIS_SCRIPTPATH = os.path.dirname(
 sys.path.append(
     os.path.join(
         THIS_SCRIPTPATH,
-        'mm-api-master',
+        'mm-api',
         'distrib',
         'python'))
 sys.path.append(
     os.path.join(
         THIS_SCRIPTPATH,
-        'mm-api-master',
+        'mm-api',
         'python'))
 
 import mmapi

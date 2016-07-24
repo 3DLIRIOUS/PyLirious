@@ -168,6 +168,8 @@ def run(script='TEMP3D_blender_default.py', log=None):
     while True:
         return_code = subprocess.call(cmd, shell=True, stdout=log_file,
                                       stderr=log_file, universal_newlines=True)
+        if log is not None:
+            log_file.close()
         if return_code == 0:
             break
         else:
@@ -205,6 +207,7 @@ def run(script='TEMP3D_blender_default.py', log=None):
             elif choice == 'r':
                 print('Retrying blender cmd ...')
     if log is not None:
+        log_file = open(log, 'a')
         log_file.write('***END OF BLENDER STDOUT & STDERR***\n')
         log_file.write('blender return code = %s\n\n' % return_code)
         log_file.close()
