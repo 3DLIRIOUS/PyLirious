@@ -25,7 +25,9 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
         script_file.write('\nbpylirious.%s(' % (function))
     script_file.close()
 
-    str_args = ['file_in', 'file_out', 'axis', 'operation']
+    # Need to manually add any arguments that are strings to this list
+    # TODO: can we automatically determine if a value is a string instead of having to use a hardcoded list?
+    str_args = ['file_in', 'file_out', 'axis', 'operation', 'method']
 
     script_file = open(script, 'a')
     if kwargs is not None:
@@ -49,16 +51,17 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
 
 
 def begin(script='TEMP3D_blender_default.py'):
+    """ Create new Blender Python script and write opening lines"""
     script_file = open(script, 'w')
     script_file.write('\n'.join([
         '""" Blender Python script created by pylirious.writebpy"""\n',
-        #'import bpy',
-        #'import bmesh',
-        #'from mathutils import Vector',
-        #'import os',
-        #'import sys',
-        #'import inspect',
-        #'import math',
+        'import bpy',
+        'import bmesh',
+        'from mathutils import Vector',
+        'import os',
+        'import sys',
+        'import inspect',
+        'import math',
         'from pylirious import bpylirious',
         #'import meshlabxml as mlx',
         '\n']))
@@ -126,6 +129,15 @@ def extrude_bottom(return_vars=None,
     return return_vars
 
 
+def spherical_select(return_vars=None,
+                     script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'spherical_select'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
 def extrude_plane(return_vars=None,
                   script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
@@ -143,10 +155,12 @@ def boolean(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
     return return_vars
 
 
-def command(cmd=None, script='TEMP3D_blender_default.py'):
-    """ Write the command verbatim to the script file"""
+def command(script='TEMP3D_blender_default.py', cmd=None):
+    """ Write the command verbatim to the script file
+
+    """
     script_file = open(script, 'a')
-    script_file.write(cmd)
+    script_file.write(cmd + '\n')
     script_file.close()
 
 

@@ -16,106 +16,36 @@ import meshlabxml as mlx
 
 from . import filename
 
-"""
-run_openscad() {
-    #$1=input
-    #$2=output
-
-	#set -x
-    local start_time
-    local end_time
-    local diff_time
-    local return_code
-
-    echo ; echo -n "Rendering OpenSCAD file & generating stl ... "
-    start_time=$(date +%s.%N)
-    openscad -o "$2" "$1"
-    return_code=$?
-    end_time=$(date +%s.%N)
-    diff_time=$(bc <<< "$end_time - $start_time")
-    diff_time=$(printf %.0f $diff_time) #round to integer milliseconds
-    echo -n "finished in "; printf "%0dh:%0dm:%0ds" $(($diff_time/3600)) $(($diff_time%3600/60)) $(($diff_time%60)); echo ", return code: $return_code"
-
-    if [ $return_code -ne 0 ]; then
-        pause "Uh oh, looks like there's an error. Hit any key to keep going anyway ... "
-    fi
-
-    return $return_code
-}
-
-run_admesh() {
-    #$1=input
-    #$2=output - if blank run check only, otherwise output ascii stl
-
-    local start_time
-    local end_time
-    local diff_time
-    local return_code
-    local O=""
-
-    # set default log file if it is not already set
-    if [ -z "$admesh_LF" ]; then
-        admesh_LF="TEMP3DL_admeshlog.txt"
-    fi
-
-    # check for output file
-    if [ -n "$2" ]; then
-        O="-a $2"
-    fi
-
-	echo
-	if [  "$verbosity" -ge 4  ]; then
-		echo "*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*"
-	fi
-    echo -n "    Running ADMesh ... "
-    start_time=$(date +%s.%N)
-    admesh "$1" $O > "$admesh_LF"
-    return_code=$?
-    end_time=$(date +%s.%N)
-    diff_time=$(bc <<< "$end_time - $start_time")
-    diff_time=$(printf %.0f $diff_time) #round to integer milliseconds
-    echo -n "finished in "; printf "%0dh:%0dm:%0ds" $(($diff_time/3600)) $(($diff_time%3600/60)) $(($diff_time%60)); echo ", return code: $return_code"
-    if [ "$verbosity" -ge 4 ]; then
-		echo "*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*ADMesh*"
-	fi
-    if [ $return_code -ne 0 ]; then
-        pause "Uh oh, looks like there's an error. Hit any key to keep going anyway ... "
-    fi
-
-    return $return_code
-}
-"""
-
 
 def render_scad(script=None, log=None, file_out=None, constants=None):
     """Run openscad and render a scad script to an output file.
 
-        
     OpenSCAD will not start the GUI, but execute the given file and export the result to the output_file in a format depending on the extension (.stl / .off / .dxf, .csg).
     constants (dict): dictionary of variable:value pairs to override with constants (uses -D switch)
     Unlike normal OpenSCAD assignments, these assignments don't define variables, but constants, which can not be changed inside the program, and can thus be used to overwrite values defined in the program at export time.
 
     If you want to assign the -D variable to another variable, the -D variable MUST be initialised in the main .scad program
-    
+
     """
     if platform.system() == 'Windows':
         cmd = 'openscad.com '
     else:
         cmd = 'openscad '
     cmd += '-o %s ' % file_out
-    
+
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('//OpenSCAD constants for %s\n\n' % script)
-    for key, value in constants.items():
-        if isinstance(value, str):
-            cmd += '-D "%s=\\"%s\\"" ' % (key, value)
-            if log is not None:
-                log_file.write('%s="%s";\n' % (key, value))
-        else:
-            cmd += '-D %s=%s ' % (key, value)
-            if log is not None:
-                log_file.write('%s=%s;\n' % (key, value))
+    if constants is not None:
+        for key, value in constants.items():
+            if isinstance(value, str):
+                cmd += '-D "%s=\\"%s\\"" ' % (key, value)
+                if log is not None:
+                    log_file.write('%s="%s";\n' % (key, value))
+            else:
+                cmd += '-D %s=%s ' % (key, value)
+                if log is not None:
+                    log_file.write('%s=%s;\n' % (key, value))
     cmd += '%s' % script
     if log is not None:
         log_file.write('\n\ncmd = %s\n\n' % cmd)
@@ -158,7 +88,7 @@ def render_scad(script=None, log=None, file_out=None, constants=None):
                 sys.exit(1)
             elif choice == 'xd':
                 print('Deleting TEMP3D* and log files and exiting ...')
-                delete_all('TEMP3D*')
+                mlx.util.delete_all('TEMP3D*')
                 if log is not None:
                     os.remove(log)
                 sys.exit(1)

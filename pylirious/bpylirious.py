@@ -5,17 +5,17 @@ Use within blender
 At the start of each function you should be in OBJECT mode.
 """
 
-# Blender modules
-import bpy
-import bmesh
-from mathutils import Vector
-
 # Built-in modules
 import os
 import sys
 import argparse
 import inspect
 import math
+
+# Blender modules
+import bpy
+import bmesh
+from mathutils import Vector
 
 # Sub-modules
 from . import filename
@@ -32,7 +32,7 @@ def begin():
 
 
 def import_mesh(file_in=None):
-    fprefix, scale_meta, up_meta, fext = filename.parse(file_in)
+    _, _, up_meta, fext = filename.parse(file_in)
 
     if up_meta is not None:
         up = up_meta.upper()
@@ -103,7 +103,7 @@ def export_mesh(mesh_object=None, file_out=None, texture=None):
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
 
-    fprefix, scale_meta, up_meta, fext = filename.parse(file_out)
+    _, _, up_meta, fext = filename.parse(file_out)
     return_code = 0
 
     if up_meta is not None:
@@ -240,6 +240,11 @@ def join(objects=None):
 
 def separate(mesh_object):
     """ Separate object by loose parts """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
 
     bpy.ops.mesh.separate(type='LOOSE')
     # How to select subsequent objects and assign them to variables?
@@ -339,9 +344,14 @@ def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6):
     return None
 
 
-def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
-                  radius=1, angle=1, distance=6):
-    """ Select all vertices on the XY plane (Z = 0) and extrude"""
+def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
+                     radius=1, method='FACE'):
+    """Select within a spherical volume with center and radius
+
+    Select either by face centers or vertices.
+
+    At the end, will be in edit mode with the faces or vertices selected.
+    """
     center = Vector(center)
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
@@ -353,11 +363,16 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
     bm = bmesh.new()
     bm.from_mesh(mesh_object.data)
 
-    # Select all faces with their center median within a circle of
-    # radius=radius
-    for face in bm.faces:
-        vert1 = mesh_object.matrix_world * face.calc_center_median()  # global face median
-        face.select = ((center - vert1).length <= radius)
+    if method == 'FACE':
+        # Select all faces with their center median within a sphere of
+        # radius=radius
+        for face in bm.faces:
+            vert1 = mesh_object.matrix_world * face.calc_center_median()  # global face median
+            face.select = ((center - vert1).length <= radius)
+    else:  # VERT
+        # Select all vertices with within a circle of radius=radius
+        for vert in bm.verts:
+            vert.select = ((center - vert.co).length <= radius)
 
     # Finish up, write the bmesh back to the mesh
     bm.to_mesh(mesh_object.data)
@@ -366,8 +381,21 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
     # Switch to edit mode to view selection
     bpy.ops.object.mode_set(mode='EDIT')
 
-    # Change to face select mode
-    bpy.ops.mesh.select_mode(type='FACE')
+    if method == 'FACE':
+        # Change to face select mode
+        bpy.ops.mesh.select_mode(type='FACE')
+    else:  # VERT
+        # Change to vert select mode
+        bpy.ops.mesh.select_mode(type='VERT')
+    # NOTE: still in EDIT mode
+    return None
+
+
+def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
+                  radius=1, angle=1, distance=6):
+    """ Select all faces with centers within spherical radius and center,
+        select connected plane, and extrude distance"""
+    spherical_select(mesh_object, center, radius, 'FACE')
 
     # Select linked flat faces
     bpy.ops.mesh.faces_select_linked_flat(sharpness=math.radians(angle))
@@ -379,7 +407,7 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
             "constraint_axis": (False, False, True),
             "constraint_orientation": 'GLOBAL'})
 
-    # Switch to object mode
+    # Switch to OBJECT mode
     bpy.ops.object.mode_set(mode='OBJECT')
     return None
 
