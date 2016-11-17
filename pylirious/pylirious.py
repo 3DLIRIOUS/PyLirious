@@ -15,7 +15,7 @@ from datetime import datetime
 import meshlabxml as mlx
 
 from . import filename
-
+from . import write_mmpy
 
 def render_scad(script=None, log=None, file_out=None, constants=None):
     """Run openscad and render a scad script to an output file.
@@ -61,42 +61,8 @@ def render_scad(script=None, log=None, file_out=None, constants=None):
                                       stderr=log_file, universal_newlines=True)
         if log is not None:
             log_file.close()
-        if return_code == 0:
+        if (return_code == 0) or mlx.handle_error(program_name='OpenSCAD', cmd=cmd, log=log):
             break
-        else:
-            print('Houston, we have a problem.')
-            print('OpenSCAD did not finish sucessfully. Review the log',
-                  'file and the input file(s) to see what went wrong.')
-            print('OpenSCAD command: "%s"' % cmd)
-            print('log: "%s"' % log)
-            print('\nWhere do we go from here?')
-            print(' r  - retry running OpenSCAD (probably after',
-                  'you\'ve fixed any problems with the input files)')
-            print(' c  - continue on with the script (probably after',
-                  'you\'ve manually re-run and generated the desired',
-                  'output file(s)')
-            print(' x  - exit, keeping the TEMP3D file and log')
-            print(' xd - exit, deleting the TEMP3D files and log')
-            while True:
-                choice = input('Select r, c, x, or xd: ')
-                if choice not in ('r', 'c', 'x', 'xd'):
-                    print('Please enter a valid option.')
-                else:
-                    break
-            if choice == 'x':
-                print('Exiting ...')
-                sys.exit(1)
-            elif choice == 'xd':
-                print('Deleting TEMP3D* and log files and exiting ...')
-                mlx.util.delete_all('TEMP3D*')
-                if log is not None:
-                    os.remove(log)
-                sys.exit(1)
-            elif choice == 'c':
-                print('Continuing on ...')
-                break
-            elif choice == 'r':
-                print('Retrying blender cmd ...')
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('***END OF OPENSCAD STDOUT & STDERR***\n')
@@ -109,27 +75,28 @@ def run_admesh():
     pass
 
 
-def swap_yz(file_in, log=None):
+def swap_yz(file_in, file_out=None, log=None):
     """ Swap a mesh "Up" direction betwenn "Y" and "Z" axes.
 
     Requires metadata to know what the current "Up" direction is.
 
     """
     fprefix, scale_meta, up_meta, fext = filename.check_metadata(file_in)
-    if up_meta == 'Y':  # Y to Z: rotate 90d about X
+    if up_meta.upper() == 'Y':  # Y to Z: rotate 90d about X
         up_meta = 'Z'
-        angle = 90
-    else:  # Z to Y: rotate -90d about X
+        angle = 90.0
+    elif up_meta.upper() == 'Z':  # Z to Y: rotate -90d about X
         up_meta = 'Y'
-        angle = -90
+        angle = -90.0
 
-    file_out = '%s(%s%s).%s' % (fprefix, scale_meta, up_meta, fext)
+    if file_out is None:
+        file_out = '%s(%s%s).%s' % (fprefix, scale_meta, up_meta, fext)
     script = 'TEMP3D_swapYZ.mlx'
 
     mlx.begin(script, file_in=file_in)
-    mlx.transform.rotate(script, 'x', angle)
+    mlx.transform.rotate(script, axis='x', angle=angle)
     mlx.end(script)
-    mlx.run(log, file_in=file_in, file_out=file_out, script=script)
+    mlx.run(log=log, file_in=file_in, file_out=file_out, script=script)
     return file_out
 
 
@@ -186,40 +153,8 @@ def blend(module_function=None, log=None, module_path=None, cmd=None):
     while True:
         return_code = subprocess.call(cmd, shell=True, stdout=log_file,
                                       stderr=log_file, universal_newlines=True)
-        if return_code == 0:
+        if (return_code == 0) or mlx.handle_error(program_name='Blender', cmd=cmd, log=log):
             break
-        else:
-            print('Houston, we have a problem.')
-            print('Blender did not finish sucessfully. Review the log file and the input file(s) to see what went wrong.')
-            print('Blender command: "%s"' % cmd)
-            print('log: "%s"' % log)
-            print('\nWhere do we go from here?')
-            print(
-                ' r  - retry running Blender (probably after you\'ve fixed any problems with the input files)')
-            print(
-                ' c  - continue on with the script (probably after you\'ve manually re-run and generated the deisred output file(s)')
-            print(' x  - exit, keeping the TEMP3D file and log')
-            print(' xd - exit, deleting the TEMP3D files and log')
-            while True:
-                choice = input('Select r, c, x, or xd: ')
-                if choice not in ('r', 'c', 'x', 'xd'):
-                    print('Please enter a valid option.')
-                else:
-                    break
-            if choice == 'x':
-                print('Exiting ...')
-                sys.exit(1)
-            elif choice == 'xd':
-                print('Deleting TEMP3D* and log files and exiting ...')
-                mlx.util.delete_all('TEMP3D*')
-                if log is not None:
-                    os.remove(log)
-                sys.exit(1)
-            elif choice == 'c':
-                print('Continuing on ...')
-                break
-            elif choice == 'r':
-                print('Retrying blender cmd ...')
     if log is not None:
         log_file.write('***END OF BLENDER STDOUT & STDERR***\n')
         log_file.write('blender return code = %s\n\n' % return_code)
@@ -257,3 +192,42 @@ def setup(sys_argv):
     log_file.write('fbasename = %s\n\n' % fbasename)
     log_file.close()
     return fpath, fbasename, scriptname, log
+
+
+def hollow_volume(fullpath_in, fullpath_out, log, offset=-3,
+                  solid_resolution=128, mesh_resolution=128):
+    """ Create hollow (offset) volume using MeshMixer
+    
+    Make Solid approximates your object with small cubes (voxels).
+    This approximation actually happens twice. First we voxelize
+    the shape using solid_resolution as the sampling rate. Then we
+    use a second set of voxels to create a mesh of the first voxel
+    approximation; mesh_resolution is the sampling rate of this second
+    voxelization. These sampling rates can be the same, but they do
+    not have to be.
+    -- MeshMixer manual
+    """
+    mix_script = 'TEMP3D_mix_hollow.py'
+
+    write_mmpy.begin(mix_script)
+    obj_a = write_mmpy.import_mesh(
+        'obj_a',
+        mix_script,
+        file_in=fullpath_in)
+    obj_b = write_mmpy.make_solid(
+        'obj_b',
+        mix_script,
+        mesh_object=obj_a,
+        offset=offset,
+        solid_type=2,
+        solid_resolution=solid_resolution,
+        mesh_resolution=mesh_resolution)
+    write_mmpy.export_mesh(
+        None,
+        mix_script,
+        mesh_object=obj_b,
+        file_out=fullpath_out)
+    write_mmpy.end(mix_script)
+    write_mmpy.run(mix_script, log)
+    
+    return None

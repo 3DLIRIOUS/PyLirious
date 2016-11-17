@@ -7,6 +7,7 @@ import subprocess
 import time
 
 from meshlabxml.util import delete_all
+from meshlabxml import handle_error
 
 
 def write_mmpyfunc(return_vars=None, script=None, function=None, **kwargs):
@@ -133,7 +134,7 @@ def run(script='TEMP3D_mix_default.py', log=None):
 
     """
     python27 = 'C:\\Python27\\pythonw.exe'
-    cmd = '%s %s' % (python27, script)
+    cmd = '"%s" "%s"' % (python27, script)
 
     if log is not None:
         log_file = open(log, 'a')
@@ -181,42 +182,8 @@ def run(script='TEMP3D_mix_default.py', log=None):
         mm_proc.terminate()
         if log is not None:
             log_file.close()
-        if return_code == 0:
+        if (return_code == 0) or handle_error(program_name='MeshMixer', cmd=cmd, log=log):
             break
-        else:
-            print('Houston, we have a problem.')
-            print('MeshMixer did not finish sucessfully. Review the log',
-                  'file and the input file(s) to see what went wrong.')
-            print('MeshMixer command: "%s"' % cmd)
-            print('log: "%s"' % log)
-            print('\nWhere do we go from here?')
-            print(' r  - retry running MeshMixer (probably after',
-                  'you\'ve fixed any problems with the input files)')
-            print(' c  - continue on with the script (probably after',
-                  'you\'ve manually re-run and generated the desired',
-                  'output file(s)')
-            print(' x  - exit, keeping the TEMP3D file and log')
-            print(' xd - exit, deleting the TEMP3D files and log')
-            while True:
-                choice = input('Select r, c, x, or xd: ')
-                if choice not in ('r', 'c', 'x', 'xd'):
-                    print('Please enter a valid option.')
-                else:
-                    break
-            if choice == 'x':
-                print('Exiting ...')
-                sys.exit(1)
-            elif choice == 'xd':
-                print('Deleting TEMP3D* and log files and exiting ...')
-                delete_all('TEMP3D*')
-                if log is not None:
-                    os.remove(log)
-                sys.exit(1)
-            elif choice == 'c':
-                print('Continuing on ...')
-                break
-            elif choice == 'r':
-                print('Retrying MeshMixer cmd ...')
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('***END OF MESHMIXER STDOUT & STDERR***\n')

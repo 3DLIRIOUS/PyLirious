@@ -11,6 +11,7 @@ import sys
 import argparse
 import inspect
 import math
+import time
 
 # Blender modules
 import bpy
@@ -78,8 +79,11 @@ def import_mesh(file_in=None):
         #wait = input('pause')
         mesh_object = bpy.context.selected_objects[0]
     elif fext == 'ply':
+        # ply files are assumed to be Z up; rotate if it is Y up.
         bpy.ops.import_mesh.ply(filepath=file_in)
         mesh_object = bpy.context.active_object
+        if up_meta.upper() == 'Y':
+            rotate(mesh_object=mesh_object, axis='x', angle=90.0, apply=False)
     else:
         print('Error: filetype "%s" is not supported. Exiting ...' % fext)
         sys.exit(1)
@@ -96,7 +100,7 @@ def import_mesh(file_in=None):
     return mesh_object
 
 
-def export_mesh(mesh_object=None, file_out=None, texture=None):
+def export_mesh(mesh_object=None, file_out=None, texture=None, triangulate=True):
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
@@ -162,11 +166,12 @@ def export_mesh(mesh_object=None, file_out=None, texture=None):
             fwd = '-Z'
         if texture is None:
             texture = False
-        # Triangulate first
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.quads_convert_to_tris(
-            quad_method='BEAUTY', ngon_method='BEAUTY')
-
+        if triangulate:
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.quads_convert_to_tris(
+                quad_method='BEAUTY', ngon_method='BEAUTY')
+            bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.export_mesh.ply(
             filepath=file_out,
             check_existing=True,
@@ -187,6 +192,19 @@ def export_mesh(mesh_object=None, file_out=None, texture=None):
     return return_code
 
 
+def duplicate_mesh(mesh_object):
+    """ Duplicate mesh object"""
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+    
+    bpy.ops.object.duplicate(linked=False, mode="TRANSLATION")
+    dupe_mesh_object = bpy.context.selected_objects[0]
+    return dupe_mesh_object
+
+
 def rotate(mesh_object=None, axis='z', angle=0.0, apply=True):
     """ Rotate object """
     # Deselect All
@@ -205,7 +223,7 @@ def rotate(mesh_object=None, axis='z', angle=0.0, apply=True):
     else:
         print('Axis name is not valid; exiting ...')
         sys.exit(1)
-    # Do we need to apply rotation?
+
     if apply:
         bpy.ops.object.transform_apply(rotation=True)
     return None
@@ -221,11 +239,25 @@ def translate(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True):
 
     mesh_object.location += Vector(value)
 
-    # Do we need to apply translation?
     if apply:
         bpy.ops.object.transform_apply(location=True)
     return None
 
+    
+def scale(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True):
+    """ scale object """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+
+    mesh_object.scale = Vector(value)
+
+    if apply:
+        bpy.ops.object.transform_apply(scale=True)
+    return None
+    
 
 def join(objects=None):
     """ Join objects. Objects must be iterable (list, tuple, etc.) """
@@ -248,10 +280,14 @@ def separate(mesh_object):
 
     bpy.ops.mesh.separate(type='LOOSE')
     # How to select subsequent objects and assign them to variables?
+    # Could query all the current objects & save to list, separate mesh,
+    # then re-query and compare the two lists to find the new objects
+    # bpy.context.scene.objects ?
 
 
-def plane_cut(mesh_object=None, axis='z', offset=0.0, use_fill=True,
-              clear_inner=True, clear_outer=False, threshold=0.0001):
+def plane_cut(mesh_object=None, axis='z', offset=0.0, direction=1,
+              use_fill=True, clear_inner=True, clear_outer=False,
+              threshold=0.0001, triangulate=False):
     """ Plane cut using  the bisect operator """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
@@ -263,14 +299,23 @@ def plane_cut(mesh_object=None, axis='z', offset=0.0, use_fill=True,
     bpy.ops.object.mode_set(mode='EDIT')
 
     if axis.lower() == 'x':
-        plane_no = (1.0, 0.0, 0.0)
         plane_co = (offset, 0.0, 0.0)
+        if direction >= 0:
+            plane_no = (1.0, 0.0, 0.0)
+        else:
+            plane_no = (-1.0, 0.0, 0.0)
     elif axis.lower() == 'y':
-        plane_no = (0.0, 1.0, 0.0)
         plane_co = (0.0, offset, 0.0)
+        if direction >= 0:
+            plane_no = (0.0, 1.0, 0.0)
+        else:
+            plane_no = (0.0, -1.0, 0.0)
     elif axis.lower() == 'z':
-        plane_no = (0.0, 0.0, 1.0)
         plane_co = (0.0, 0.0, offset)
+        if direction >= 0:
+            plane_no = (0.0, 0.0, 1.0)
+        else:
+            plane_no = (0.0, 0.0, -1.0)
 
     # Select all
     bpy.ops.mesh.select_all(action='SELECT')
@@ -288,32 +333,45 @@ def plane_cut(mesh_object=None, axis='z', offset=0.0, use_fill=True,
         yend=0)
 
     # Triangulate faces
-    bpy.ops.mesh.quads_convert_to_tris(
-        quad_method='BEAUTY', ngon_method='BEAUTY')
+    if triangulate:
+        bpy.ops.mesh.select_mode(type="FACE")
+        bpy.ops.mesh.quads_convert_to_tris(
+            quad_method='BEAUTY', ngon_method='BEAUTY')
 
     # Switch to object mode
     bpy.ops.object.mode_set(mode='OBJECT')
     return None
 
 
-def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6):
-    """ Select all vertices on the XY plane (Z = 0) and extrude"""
+def select_plane(mesh_object=None, axis='z', offset=0.0,
+                 threshold=0.00001, method='FACE', clear_selection=False):
+    """ Select all the vertices or faces along a plane """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-
-    # Get the active mesh
-    #me = bpy.context.object.data
+    
+    # Clear any exisitng selections
+    if clear_selection:
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
     # Get a BMesh representation
     bm = bmesh.new()
     bm.from_mesh(mesh_object.data)
 
     for vert in bm.verts:
-        if -threshold <= vert.co.z <= threshold:
-            vert.select = True
+        if axis.lower() == 'x':
+            if (offset - threshold) <= vert.co.x <= (offset + threshold):
+                vert.select = True
+        elif axis.lower() == 'y':
+            if (offset - threshold) <= vert.co.y <= (offset + threshold):
+                vert.select = True
+        elif axis.lower() == 'z':
+            if (offset - threshold) <= vert.co.z <= (offset + threshold):
+                vert.select = True
 
     # Select edges
     """for edge in bm.edges:
@@ -329,23 +387,16 @@ def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6):
 
     # Change to vertex selection mode to ensure that vertices are selected
     bpy.ops.mesh.select_mode(type='VERT')
-    # Change to face select mode to select faces encompassed by vertices
-    bpy.ops.mesh.select_mode(type='FACE')
-
-    # Extrude bottom
-    bpy.ops.mesh.extrude_region_move(
-        TRANSFORM_OT_translate={
-            "value": (0, 0, -distance),
-            "constraint_axis": (False, False, True),
-            "constraint_orientation": 'GLOBAL'})
-
-    # Switch to object mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    if method == 'FACE':
+        # Change to face select mode to select faces encompassed by vertices
+        bpy.ops.mesh.select_mode(type='FACE')    
+    # NOTE: still in EDIT mode
     return None
 
 
 def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
-                     radius=1, method='FACE'):
+                     radius=1, method='FACE', clear_selection=False):
     """Select within a spherical volume with center and radius
 
     Select either by face centers or vertices.
@@ -359,6 +410,12 @@ def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
 
+    # Clear any exisitng selections
+    if clear_selection:
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
+    
     # Get a BMesh representation
     bm = bmesh.new()
     bm.from_mesh(mesh_object.data)
@@ -391,6 +448,27 @@ def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
     return None
 
 
+def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6):
+    """ Select all vertices on the XY plane (Z = 0) and extrude"""
+    select_plane(
+        mesh_object=mesh_object,
+        axis='z',
+        offset=0.0,
+        threshold=threshold,
+        method='FACE')
+
+    # Extrude bottom
+    bpy.ops.mesh.extrude_region_move(
+        TRANSFORM_OT_translate={
+            "value": (0.0, 0.0, -distance),
+            "constraint_axis": (False, False, True),
+            "constraint_orientation": "GLOBAL"})
+
+    # Switch to object mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return None
+
+
 def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
                   radius=1, angle=1, distance=6):
     """ Select all faces with centers within spherical radius and center,
@@ -412,15 +490,258 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
     return None
 
 
+def remove_vert_color(mesh_object=None):
+    """ Drop vertex colors from mesh """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+
+    bpy.ops.mesh.vertex_color_remove()
+    return None
+
+
+def remove_tex_color(mesh_object=None):
+    """Unlink images, textures, UV maps and materials from source object
+    
+    """
+    # TODO: drop vertex colors as well, or make that a separate function
+    
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+    
+    # Remove images
+    for texlay in mesh_object.data.uv_textures:
+        for tf in texlay.data:
+            tf.image = None
+    
+    # Remove textures
+    for i in range(len(mesh_object.data.materials)):
+        mesh_object.data.materials[i].active_texture = None
+
+    # Remove UV maps
+    bpy.ops.mesh.uv_texture_remove()
+    
+    # Remove materials
+    mesh_object.data.materials.pop(0, update_data=True)
+    return None
+
+
+def create_tex_mat(mesh_object=None, image_file=None,
+                   tex_name='texture_0', mat_name='material_0'):
+    """ Create texture and material for mesh object.
+    
+    Presumes that UV map and image file already exist
+    """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+    
+    bpy.ops.object.mode_set(mode='EDIT')
+    
+    # Create image texture from image.
+    tex = bpy.data.textures.new(tex_name, type="IMAGE")
+    
+    # Note: this needs to be the full path to the file
+    tex.image = bpy.data.images.load(image_file)
+    
+    # Create Material
+    mat = bpy.data.materials.new(mat_name)
+    mat.use_shadeless = True
+    mtex = mat.texture_slots.add()
+    mtex.texture = tex
+    mtex.texture_coords = "UV"
+    mtex.use_map_color_diffuse = True
+    mesh_object.data.materials.append(mat)
+
+    # Set image in UV Editing window
+    bpy.data.screens["UV Editing"].areas[1].spaces[0].image = tex.image
+    
+    # This is not needed. Not sure under what circumstances it would be needed.
+    # bpy.context.object.active_material.texture_slots[0].uv_layer = "UVMap"
+
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return
+
+
+def uv_smart_project(mesh_object=None, angle_limit=66.0,
+                     island_margin=0.0, user_area_weight=0.0,
+                     use_aspect=True, stretch_to_bounds=True):
+    """ UV map the selected mesh using smart project"""
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+    
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.smart_project(angle_limit=angle_limit, island_margin=island_margin, user_area_weight=user_area_weight, use_aspect=use_aspect, stretch_to_bounds=stretch_to_bounds)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return None
+
+
+def rotate_view(view='TOP', perspective='ORTHO'):
+    """ Rotate to a numpad view """
+    # Need to set correct context to modify 3D View
+    for area in bpy.context.screen.areas:
+        if area.type == "VIEW_3D":
+            break
+
+    for region in area.regions:
+        if region.type == "WINDOW":
+            break
+
+    space = area.spaces[0]
+
+    context = bpy.context.copy()
+    context['area'] = area
+    context['region'] = region
+    context['space_data'] = space
+
+    space.region_3d.view_perspective = perspective
+    bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
+    bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
+    
+    
+    return None
+
+
+def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False, 
+                         correct_aspect=True, scale_to_bounds=True):
+
+    """
+    
+    This presumes that you are in EDIT mode and have the faces selected that
+    you wish to project
+    
+    view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
+    perspective (enum in ['ORTHO', 'PERSP']): perspective/orthographic projection
+    
+    
+    http://blender.stackexchange.com/questions/34488/view3d-operations-problem
+    """
+    # Need to set correct context to modify 3D View
+    for area in bpy.context.screen.areas:
+        if area.type == "VIEW_3D":
+            break
+
+    for region in area.regions:
+        if region.type == "WINDOW":
+            break
+
+    space = area.spaces[0]
+
+    context = bpy.context.copy()
+    context['area'] = area
+    context['region'] = region
+    context['space_data'] = space
+    
+    # This swaps between orthographic and perspective projection
+    #bpy.ops.view3d.view_persportho(context, 'EXEC_DEFAULT')
+
+    space.region_3d.view_perspective = perspective
+    
+    # This needs to be run twice, otherwise the projection will happen
+    # at some intermediate roation point.
+    # I'm not sure why this is.
+    # Adding a time delay after this command has no impact on this
+    # I'm also not sure what the 'EXEC_DEFAULT' argument does, or if it's really needed
+    bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
+    bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
+    
+    bpy.ops.uv.project_from_view(context, 'EXEC_DEFAULT', camera_bounds=camera_bounds, correct_aspect=correct_aspect, scale_to_bounds=scale_to_bounds)
+    return None
+
+
+def scale_uv(mesh_object=None, value=(0.0, 0.0), center=(0.5, 0.5)):
+    """ Let's try this using bmesh """
+    list(value)
+    list(center)
+    
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+    
+    # Get a BMesh representation
+    bm = bmesh.new()
+    bm.from_mesh(mesh_object.data)
+    
+    uv_lay = bm.loops.layers.uv.active
+
+    for face in bm.faces:
+        for loop in face.loops:
+            uv = loop[uv_lay].uv
+            # Scale about center point: S(x-c) + c
+            uv[0] = value[0]*(uv[0] - center[0]) + center[0]
+            uv[1] = value[1]*(uv[1] - center[1]) + center[1]
+
+    # Finish up, write the bmesh back to the mesh
+    bm.to_mesh(mesh_object.data)
+    bm.free()
+    return None
+
+def scale_uv1(value=(0.0, 0.0)):
+    """ Scale selected UV coordinates in IMAGE_EDITOR
+    
+    Need to be in EDIT mode
+    
+    This works when run inside the GUI, but not from a script!
+    
+    """
+    value = value + (1.0,)
+    # Need to set correct context to modify IMAGE_EDITOR
+    for area in bpy.context.screen.areas:
+        if area.type == "IMAGE_EDITOR":
+            break
+
+    for region in area.regions:
+        if region.type == "WINDOW":
+            break
+
+    #space = area.spaces[0]
+
+    context = bpy.context.copy()
+    context['area'] = area
+    context['region'] = region
+    #context['space_data'] = space
+    
+    bpy.ops.transform.resize(context, value=value, constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
+    
+    return None
+
+def scale_uv2(value=(0.0, 0.0)):
+    """ Scale selected UV coordinates in IMAGE_EDITOR
+    
+    Need to be in EDIT mode
+    
+    """
+    value = value + (1.0,)
+    original_area = bpy.context.area.type
+    # change current area to image editor
+    bpy.context.area.type = 'IMAGE_EDITOR'
+
+    #insert UV specific transforms here
+    bpy.ops.transform.resize(context, value=value, constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
+
+    #return to previouswindow for good measure ( and cleanliness )
+    bpy.context.area.type = original_area
+    return None
+
+
 def bevel():
     pass
 
 
-def smart_uv_project():
-    pass
-
-
-def boolean(obj_src=None, operation='+', obj_trgt=None):
+def boolean(obj_src=None, operation='+', obj_trgt=None, solver='CARVE'):
     """Perform a boolean operation on a source mesh with a target mesh.
 
     The result of the operation will be exported to the output file.
@@ -467,6 +788,7 @@ def boolean(obj_src=None, operation='+', obj_trgt=None):
     mod.name = 'mybool'
     mod.object = obj_trgt
     mod.operation = operation_dict[operation]
+    mod.solver = solver
     #mod[0].operation = 'DIFFERENCE'
     #mod[0].operation = 'INTERSECT'
     #mod[0].operation = 'UNION'
@@ -480,6 +802,53 @@ def boolean(obj_src=None, operation='+', obj_trgt=None):
     # return return_code
     return None
 
+
+def aabb(mesh_object):
+    """ Find the axis aligned bounding box of the mesh object"""
+    # Note that bound_box is not axis aligned. Will it be if all rotations are applied first?
+    
+    # Convert boundign box corners from object space to world space
+    #bbox_corners = [ob.matrix_world * Vector(corner) for corner in ob.bound_box]
+    
+    # Let's do this using veritces instead
+    """
+    matrix_w = mesh_object.matrix_world
+    vectors = [matrix_w * vertex.co for vertex in mesh_object.data.vertices]
+    aabb = {'min': [x_co, y_co, z_co], 'max': [x_co, y_co, z_co]}
+    
+    return min(vectors, key=lambda item: item.z)
+    """
+    
+    aabb = {'min': [999999.0, 999999.0, 999999.0], 'max': [-999999.0, -999999.0, -999999.0]}
+    minz = 999999.0
+
+    for vertex in mesh_object.data.vertices:
+        # object vertices are in object space, translate to world space
+        v_world = mesh_object.matrix_world * Vector((vertex.co[0],vertex.co[1],vertex.co[2]))
+
+        if v_world[0] < aabb['min'][0]:
+            aabb['min'][0] = v_world[0]
+        if v_world[1] < aabb['min'][1]:
+            aabb['min'][1] = v_world[1]
+        if v_world[2] < aabb['min'][2]:
+            aabb['min'][2] = v_world[2]
+        if v_world[0] > aabb['max'][0]:
+            aabb['max'][0] = v_world[0]
+        if v_world[1] > aabb['max'][1]:
+            aabb['max'][1] = v_world[1]
+        if v_world[2] > aabb['max'][2]:
+            aabb['max'][2] = v_world[2]
+    
+    aabb['center'] = [(aabb['max'][0] + aabb['min'][0]) / 2,
+                      (aabb['max'][1] + aabb['min'][1]) / 2,
+                      (aabb['max'][2] + aabb['min'][2]) / 2]
+    aabb['size'] = [aabb['max'][0] - aabb['min'][0], aabb['max'][1] - aabb['min'][1],
+                    aabb['max'][2] - aabb['min'][2]]
+    aabb['diagonal'] = math.sqrt(
+        aabb['size'][0]**2 +
+        aabb['size'][1]**2 +
+        aabb['size'][2]**2)
+    return aabb
 
 def main():
     # get the args passed to blender after "--", all of which are ignored by

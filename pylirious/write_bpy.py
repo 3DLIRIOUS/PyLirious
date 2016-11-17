@@ -5,6 +5,7 @@ import sys
 import subprocess
 
 from meshlabxml.util import delete_all
+from meshlabxml import handle_error
 
 
 def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
@@ -27,7 +28,8 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
 
     # Need to manually add any arguments that are strings to this list
     # TODO: can we automatically determine if a value is a string instead of having to use a hardcoded list?
-    str_args = ['file_in', 'file_out', 'axis', 'operation', 'method']
+    filename_args = ['file_in', 'file_out', 'image_file']
+    str_args = ['axis', 'operation', 'method', 'tex_name', 'mat_name', 'view', 'perspective']
 
     script_file = open(script, 'a')
     if kwargs is not None:
@@ -36,7 +38,10 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
             if not first:
                 script_file.write(', ')
             # Need to quote strings
-            if key in str_args:
+            if key in filename_args:
+                # Use raw literal strings; needed for Windows paths.
+                script_file.write('%s=r"%s"' % (key, value))
+            elif key in str_args:
                 script_file.write('%s="%s"' % (key, value))
             else:
                 script_file.write('%s=%s' % (key, value))
@@ -88,6 +93,14 @@ def export_mesh(return_vars=None,
     return return_vars
 
 
+def duplicate_mesh(return_vars=None,
+                script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'duplicate_mesh'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
 def rotate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
     function = 'rotate'
@@ -99,6 +112,14 @@ def rotate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
 def translate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
     function = 'translate'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def scale(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'scale'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars
@@ -120,10 +141,9 @@ def plane_cut(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
     return return_vars
 
 
-def extrude_bottom(return_vars=None,
-                   script='TEMP3D_blender_default.py', **kwargs):
+def select_plane(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
-    function = 'extrude_bottom'
+    function = 'select_plane'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars
@@ -138,10 +158,82 @@ def spherical_select(return_vars=None,
     return return_vars
 
 
+def extrude_bottom(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'extrude_bottom'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
 def extrude_plane(return_vars=None,
                   script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in mmlirious and return return_vars"""
     function = 'extrude_plane'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def remove_vert_color(return_vars=None,
+                  script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'remove_vert_color'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def remove_tex_color(return_vars=None,
+                  script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'remove_tex_color'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def create_tex_mat(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'create_tex_mat'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def uv_smart_project(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'uv_smart_project'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def rotate_view(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'rotate_view'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def uv_project_from_view(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'uv_project_from_view'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def scale_uv(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in mmlirious and return return_vars"""
+    function = 'scale_uv'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars
@@ -155,20 +247,21 @@ def boolean(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
     return return_vars
 
 
-def command(script='TEMP3D_blender_default.py', cmd=None):
+def command(return_vars=None, script='TEMP3D_blender_default.py', cmd=None):
     """ Write the command verbatim to the script file
 
     """
     script_file = open(script, 'a')
     script_file.write(cmd + '\n')
     script_file.close()
+    return return_vars
 
 
 def run(script='TEMP3D_blender_default.py', log=None):
     """Run Blender in a subprocess and execute script.
 
     """
-    cmd = 'blender --background --factory-startup --python %s' % script
+    cmd = 'blender --background --factory-startup --python "%s"' % script
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('cmd = %s\n' % cmd)
@@ -184,42 +277,8 @@ def run(script='TEMP3D_blender_default.py', log=None):
                                       stderr=log_file, universal_newlines=True)
         if log is not None:
             log_file.close()
-        if return_code == 0:
+        if (return_code == 0) or handle_error(program_name='Blender', cmd=cmd, log=log):
             break
-        else:
-            print('Houston, we have a problem.')
-            print('Blender did not finish sucessfully. Review the log',
-                  'file and the input file(s) to see what went wrong.')
-            print('Blender command: "%s"' % cmd)
-            print('log: "%s"' % log)
-            print('\nWhere do we go from here?')
-            print(' r  - retry running Blender (probably after',
-                  'you\'ve fixed any problems with the input files)')
-            print(' c  - continue on with the script (probably after',
-                  'you\'ve manually re-run and generated the desired',
-                  'output file(s)')
-            print(' x  - exit, keeping the TEMP3D file and log')
-            print(' xd - exit, deleting the TEMP3D files and log')
-            while True:
-                choice = input('Select r, c, x, or xd: ')
-                if choice not in ('r', 'c', 'x', 'xd'):
-                    print('Please enter a valid option.')
-                else:
-                    break
-            if choice == 'x':
-                print('Exiting ...')
-                sys.exit(1)
-            elif choice == 'xd':
-                print('Deleting TEMP3D* and log files and exiting ...')
-                delete_all('TEMP3D*')
-                if log is not None:
-                    os.remove(log)
-                sys.exit(1)
-            elif choice == 'c':
-                print('Continuing on ...')
-                break
-            elif choice == 'r':
-                print('Retrying blender cmd ...')
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('***END OF BLENDER STDOUT & STDERR***\n')
