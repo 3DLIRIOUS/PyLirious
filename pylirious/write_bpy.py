@@ -77,7 +77,7 @@ def begin(script='TEMP3D_blender_default.py'):
 
 def import_mesh(return_vars=None,
                 script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'import_mesh'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -86,7 +86,7 @@ def import_mesh(return_vars=None,
 
 def export_mesh(return_vars=None,
                 script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'export_mesh'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -95,14 +95,14 @@ def export_mesh(return_vars=None,
 
 def duplicate_mesh(return_vars=None,
                 script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'duplicate_mesh'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars
 
 def rotate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'rotate'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -110,7 +110,7 @@ def rotate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
 
 
 def translate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'translate'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -118,7 +118,7 @@ def translate(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
 
 
 def scale(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'scale'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -126,7 +126,7 @@ def scale(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
 
 
 def join(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'join'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -134,7 +134,7 @@ def join(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
 
 
 def plane_cut(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'plane_cut'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -142,7 +142,7 @@ def plane_cut(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
 
 
 def select_plane(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'select_plane'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -151,7 +151,7 @@ def select_plane(return_vars=None, script='TEMP3D_blender_default.py', **kwargs)
 
 def spherical_select(return_vars=None,
                      script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'spherical_select'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -160,7 +160,7 @@ def spherical_select(return_vars=None,
 
 def extrude_bottom(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'extrude_bottom'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -169,7 +169,7 @@ def extrude_bottom(return_vars=None,
 
 def extrude_plane(return_vars=None,
                   script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'extrude_plane'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -178,7 +178,7 @@ def extrude_plane(return_vars=None,
 
 def remove_vert_color(return_vars=None,
                   script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'remove_vert_color'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -187,7 +187,7 @@ def remove_vert_color(return_vars=None,
 
 def remove_tex_color(return_vars=None,
                   script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'remove_tex_color'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -196,7 +196,7 @@ def remove_tex_color(return_vars=None,
 
 def create_tex_mat(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'create_tex_mat'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -205,7 +205,7 @@ def create_tex_mat(return_vars=None,
 
 def uv_smart_project(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'uv_smart_project'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -214,7 +214,7 @@ def uv_smart_project(return_vars=None,
 
 def rotate_view(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'rotate_view'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -223,7 +223,7 @@ def rotate_view(return_vars=None,
 
 def uv_project_from_view(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'uv_project_from_view'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -232,7 +232,7 @@ def uv_project_from_view(return_vars=None,
 
 def scale_uv(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'scale_uv'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
@@ -240,8 +240,16 @@ def scale_uv(return_vars=None,
 
 
 def boolean(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
-    """ Run the same function in mmlirious and return return_vars"""
+    """ Run the same function in bpylirious and return return_vars"""
     function = 'boolean'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def measure_aabb(return_vars=None, script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in bpylirious and return return_vars"""
+    function = 'measure_aabb'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars

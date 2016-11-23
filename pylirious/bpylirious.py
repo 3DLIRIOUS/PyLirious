@@ -11,7 +11,6 @@ import sys
 import argparse
 import inspect
 import math
-import time
 
 # Blender modules
 import bpy
@@ -193,14 +192,27 @@ def export_mesh(mesh_object=None, file_out=None, texture=None, triangulate=True)
 
 
 def duplicate_mesh(mesh_object):
-    """ Duplicate mesh object"""
+    """ Duplicate mesh object
+    
+    This function is causeing blender to crash if we duplicate after
+    performing a boolean. Why? It is the bpy.ops.object.duplicate
+    function that causes it.
+    Note that script still executes correctly.
+    The problem is related to duplicating an object that is already a duplicate,
+    e.g. duplicating, dropping colors, then duplicating again.
+    Workaround is to duplicate the orginal multiple times.
+    """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-    
+
     bpy.ops.object.duplicate(linked=False, mode="TRANSLATION")
+    #bpy.ops.object.duplicate()
+    
+    #bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={"linked":False, "mode":'TRANSLATION'}, TRANSFORM_OT_translate={"value":(0, 0, 0), "constraint_axis":(False, False, False), "constraint_orientation":'GLOBAL', "mirror":False, "proportional":'DISABLED', "proportional_edit_falloff":'SMOOTH', "proportional_size":1, "snap":False, "snap_target":'CLOSEST', "snap_point":(0, 0, 0), "snap_align":False, "snap_normal":(0, 0, 0), "gpencil_strokes":False, "texture_space":False, "remove_on_cancel":False, "release_confirm":False})
+
     dupe_mesh_object = bpy.context.selected_objects[0]
     return dupe_mesh_object
 
@@ -243,7 +255,7 @@ def translate(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True):
         bpy.ops.object.transform_apply(location=True)
     return None
 
-    
+
 def scale(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True):
     """ scale object """
     # Deselect All
@@ -257,7 +269,7 @@ def scale(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True):
     if apply:
         bpy.ops.object.transform_apply(scale=True)
     return None
-    
+
 
 def join(objects=None):
     """ Join objects. Objects must be iterable (list, tuple, etc.) """
@@ -351,7 +363,7 @@ def select_plane(mesh_object=None, axis='z', offset=0.0,
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-    
+
     # Clear any exisitng selections
     if clear_selection:
         bpy.ops.object.mode_set(mode='EDIT')
@@ -387,10 +399,10 @@ def select_plane(mesh_object=None, axis='z', offset=0.0,
 
     # Change to vertex selection mode to ensure that vertices are selected
     bpy.ops.mesh.select_mode(type='VERT')
-    
+
     if method == 'FACE':
         # Change to face select mode to select faces encompassed by vertices
-        bpy.ops.mesh.select_mode(type='FACE')    
+        bpy.ops.mesh.select_mode(type='FACE')
     # NOTE: still in EDIT mode
     return None
 
@@ -415,7 +427,7 @@ def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
-    
+
     # Get a BMesh representation
     bm = bmesh.new()
     bm.from_mesh(mesh_object.data)
@@ -504,28 +516,26 @@ def remove_vert_color(mesh_object=None):
 
 def remove_tex_color(mesh_object=None):
     """Unlink images, textures, UV maps and materials from source object
-    
+
     """
-    # TODO: drop vertex colors as well, or make that a separate function
-    
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-    
+
     # Remove images
     for texlay in mesh_object.data.uv_textures:
         for tf in texlay.data:
             tf.image = None
-    
+
     # Remove textures
     for i in range(len(mesh_object.data.materials)):
         mesh_object.data.materials[i].active_texture = None
 
     # Remove UV maps
     bpy.ops.mesh.uv_texture_remove()
-    
+
     # Remove materials
     mesh_object.data.materials.pop(0, update_data=True)
     return None
@@ -534,7 +544,7 @@ def remove_tex_color(mesh_object=None):
 def create_tex_mat(mesh_object=None, image_file=None,
                    tex_name='texture_0', mat_name='material_0'):
     """ Create texture and material for mesh object.
-    
+
     Presumes that UV map and image file already exist
     """
     # Deselect All
@@ -542,15 +552,15 @@ def create_tex_mat(mesh_object=None, image_file=None,
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-    
+
     bpy.ops.object.mode_set(mode='EDIT')
-    
+
     # Create image texture from image.
     tex = bpy.data.textures.new(tex_name, type="IMAGE")
-    
+
     # Note: this needs to be the full path to the file
     tex.image = bpy.data.images.load(image_file)
-    
+
     # Create Material
     mat = bpy.data.materials.new(mat_name)
     mat.use_shadeless = True
@@ -562,7 +572,7 @@ def create_tex_mat(mesh_object=None, image_file=None,
 
     # Set image in UV Editing window
     bpy.data.screens["UV Editing"].areas[1].spaces[0].image = tex.image
-    
+
     # This is not needed. Not sure under what circumstances it would be needed.
     # bpy.context.object.active_material.texture_slots[0].uv_layer = "UVMap"
 
@@ -579,7 +589,7 @@ def uv_smart_project(mesh_object=None, angle_limit=66.0,
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-    
+
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.smart_project(angle_limit=angle_limit, island_margin=island_margin, user_area_weight=user_area_weight, use_aspect=use_aspect, stretch_to_bounds=stretch_to_bounds)
@@ -608,23 +618,21 @@ def rotate_view(view='TOP', perspective='ORTHO'):
     space.region_3d.view_perspective = perspective
     bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
     bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
-    
-    
+
     return None
 
 
-def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False, 
+def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False,
                          correct_aspect=True, scale_to_bounds=True):
-
     """
-    
+
     This presumes that you are in EDIT mode and have the faces selected that
     you wish to project
-    
+
     view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
     perspective (enum in ['ORTHO', 'PERSP']): perspective/orthographic projection
-    
-    
+
+
     http://blender.stackexchange.com/questions/34488/view3d-operations-problem
     """
     # Need to set correct context to modify 3D View
@@ -642,12 +650,12 @@ def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False,
     context['area'] = area
     context['region'] = region
     context['space_data'] = space
-    
+
     # This swaps between orthographic and perspective projection
     #bpy.ops.view3d.view_persportho(context, 'EXEC_DEFAULT')
 
     space.region_3d.view_perspective = perspective
-    
+
     # This needs to be run twice, otherwise the projection will happen
     # at some intermediate roation point.
     # I'm not sure why this is.
@@ -655,7 +663,7 @@ def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False,
     # I'm also not sure what the 'EXEC_DEFAULT' argument does, or if it's really needed
     bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
     bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
-    
+
     bpy.ops.uv.project_from_view(context, 'EXEC_DEFAULT', camera_bounds=camera_bounds, correct_aspect=correct_aspect, scale_to_bounds=scale_to_bounds)
     return None
 
@@ -664,75 +672,49 @@ def scale_uv(mesh_object=None, value=(0.0, 0.0), center=(0.5, 0.5)):
     """ Let's try this using bmesh """
     list(value)
     list(center)
-    
+
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
-    
+
     # Get a BMesh representation
     bm = bmesh.new()
     bm.from_mesh(mesh_object.data)
-    
+
     uv_lay = bm.loops.layers.uv.active
 
     for face in bm.faces:
         for loop in face.loops:
             uv = loop[uv_lay].uv
             # Scale about center point: S(x-c) + c
-            uv[0] = value[0]*(uv[0] - center[0]) + center[0]
-            uv[1] = value[1]*(uv[1] - center[1]) + center[1]
+            uv[0] = value[0] * (uv[0] - center[0]) + center[0]
+            uv[1] = value[1] * (uv[1] - center[1]) + center[1]
 
     # Finish up, write the bmesh back to the mesh
     bm.to_mesh(mesh_object.data)
     bm.free()
     return None
 
-def scale_uv1(value=(0.0, 0.0)):
+
+def scale_uv_gui(value=(0.0, 0.0)):
     """ Scale selected UV coordinates in IMAGE_EDITOR
-    
+
     Need to be in EDIT mode
-    
+
     This works when run inside the GUI, but not from a script!
-    
-    """
-    value = value + (1.0,)
-    # Need to set correct context to modify IMAGE_EDITOR
-    for area in bpy.context.screen.areas:
-        if area.type == "IMAGE_EDITOR":
-            break
 
-    for region in area.regions:
-        if region.type == "WINDOW":
-            break
-
-    #space = area.spaces[0]
-
-    context = bpy.context.copy()
-    context['area'] = area
-    context['region'] = region
-    #context['space_data'] = space
-    
-    bpy.ops.transform.resize(context, value=value, constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
-    
-    return None
-
-def scale_uv2(value=(0.0, 0.0)):
-    """ Scale selected UV coordinates in IMAGE_EDITOR
-    
-    Need to be in EDIT mode
-    
     """
     value = value + (1.0,)
     original_area = bpy.context.area.type
     # change current area to image editor
     bpy.context.area.type = 'IMAGE_EDITOR'
 
-    #insert UV specific transforms here
-    bpy.ops.transform.resize(context, value=value, constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
+    # insert UV specific transforms here
+    bpy.ops.transform.resize(value=value, constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
 
-    #return to previouswindow for good measure ( and cleanliness )
+    # return to previouswindow for good measure ( and cleanliness )
     bpy.context.area.type = original_area
     return None
 
@@ -803,28 +785,27 @@ def boolean(obj_src=None, operation='+', obj_trgt=None, solver='CARVE'):
     return None
 
 
-def aabb(mesh_object):
+def measure_aabb(mesh_object):
     """ Find the axis aligned bounding box of the mesh object"""
     # Note that bound_box is not axis aligned. Will it be if all rotations are applied first?
-    
+
     # Convert boundign box corners from object space to world space
     #bbox_corners = [ob.matrix_world * Vector(corner) for corner in ob.bound_box]
-    
+
     # Let's do this using veritces instead
     """
     matrix_w = mesh_object.matrix_world
     vectors = [matrix_w * vertex.co for vertex in mesh_object.data.vertices]
     aabb = {'min': [x_co, y_co, z_co], 'max': [x_co, y_co, z_co]}
-    
+
     return min(vectors, key=lambda item: item.z)
     """
-    
+
     aabb = {'min': [999999.0, 999999.0, 999999.0], 'max': [-999999.0, -999999.0, -999999.0]}
-    minz = 999999.0
 
     for vertex in mesh_object.data.vertices:
         # object vertices are in object space, translate to world space
-        v_world = mesh_object.matrix_world * Vector((vertex.co[0],vertex.co[1],vertex.co[2]))
+        v_world = mesh_object.matrix_world * Vector((vertex.co[0], vertex.co[1], vertex.co[2]))
 
         if v_world[0] < aabb['min'][0]:
             aabb['min'][0] = v_world[0]
@@ -838,7 +819,7 @@ def aabb(mesh_object):
             aabb['max'][1] = v_world[1]
         if v_world[2] > aabb['max'][2]:
             aabb['max'][2] = v_world[2]
-    
+
     aabb['center'] = [(aabb['max'][0] + aabb['min'][0]) / 2,
                       (aabb['max'][1] + aabb['min'][1]) / 2,
                       (aabb['max'][2] + aabb['min'][2]) / 2]
@@ -849,6 +830,7 @@ def aabb(mesh_object):
         aabb['size'][1]**2 +
         aabb['size'][2]**2)
     return aabb
+
 
 def main():
     # get the args passed to blender after "--", all of which are ignored by
