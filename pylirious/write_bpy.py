@@ -29,7 +29,11 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
     # Need to manually add any arguments that are strings to this list
     # TODO: can we automatically determine if a value is a string instead of having to use a hardcoded list?
     filename_args = ['file_in', 'file_out', 'image_file']
-    str_args = ['axis', 'operation', 'method', 'tex_name', 'mat_name', 'view', 'perspective']
+    str_args = ['axis', 'operation', 'method', 'tex_name', 'mat_name', 'view', 'perspective',
+                'coord_system']
+
+    if function == 'uv_cylinder_project':
+        str_args.append('direction')
 
     script_file = open(script, 'a')
     if kwargs is not None:
@@ -212,6 +216,15 @@ def uv_smart_project(return_vars=None,
     return return_vars
 
 
+def uv_cylinder_project(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in bpylirious and return return_vars"""
+    function = 'uv_cylinder_project'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
 def rotate_view(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in bpylirious and return return_vars"""
@@ -225,6 +238,15 @@ def uv_project_from_view(return_vars=None,
                    script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in bpylirious and return return_vars"""
     function = 'uv_project_from_view'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def translate_uv(return_vars=None,
+                   script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in bpylirious and return return_vars"""
+    function = 'translate_uv'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars

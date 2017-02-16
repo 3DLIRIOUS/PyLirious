@@ -283,24 +283,53 @@ def join(objects=None):
 
 
 def separate(mesh_object):
-    """ Separate object by loose parts """
+    """ Separate object by loose parts 
+
+    Start mode: OBJECT
+    End mode: OBJECT
+
+    Args:
+        mesh_object (Blender object): the mesh to separate
+
+    Returns:
+        list: list of the separated objects
+
+    """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
 
+    # Switch to edit mode
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    # List of all the mesh objects in the session before separating
+    meshes_old = [obj for obj in bpy.data.objects if obj.type == 'MESH']
+
     bpy.ops.mesh.separate(type='LOOSE')
-    # How to select subsequent objects and assign them to variables?
-    # Could query all the current objects & save to list, separate mesh,
-    # then re-query and compare the two lists to find the new objects
-    # bpy.context.scene.objects ?
+
+    # List of all the mesh objects in the session after separating
+    meshes_new = [obj for obj in bpy.data.objects if obj.type == 'MESH']
+
+    # Remove the old meshes from the list, leaving just the newly created objects
+    for i in meshes_old:
+        meshes_new.remove(i)
+
+    # Switch to object mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return meshes_new
 
 
 def plane_cut(mesh_object=None, axis='z', offset=0.0, direction=1,
               use_fill=True, clear_inner=True, clear_outer=False,
               threshold=0.0001, triangulate=False):
-    """ Plane cut using  the bisect operator """
+    """ Plane cut using  the bisect operator
+
+    Start mode: OBJECT
+    End mode: OBJECT
+
+    """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
@@ -364,7 +393,7 @@ def select_plane(mesh_object=None, axis='z', offset=0.0,
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
 
-    # Clear any exisitng selections
+    # Clear any existing selections
     if clear_selection:
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='DESELECT')
@@ -597,41 +626,58 @@ def uv_smart_project(mesh_object=None, angle_limit=66.0,
     return None
 
 
-def rotate_view(view='TOP', perspective='ORTHO'):
-    """ Rotate to a numpad view """
-    # Need to set correct context to modify 3D View
-    for area in bpy.context.screen.areas:
-        if area.type == "VIEW_3D":
-            break
+def uv_cylinder_project(mesh_object=None, view=None, direction='VIEW_ON_EQUATOR',
+    align='POLAR_ZX', radius=1.0, correct_aspect=True, clip_to_bounds=False,
+    scale_to_bounds=True):
+    """ Project the UV vertices of the mesh over the curved wall of a cylinder
 
-    for region in area.regions:
-        if region.type == "WINDOW":
-            break
+    view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
+        Used to set view for direction
 
-    space = area.spaces[0]
+    direction (enum in ['VIEW_ON_EQUATOR', 'VIEW_ON_POLES', 'ALIGN_TO_OBJECT'], (optional)) –
 
-    context = bpy.context.copy()
-    context['area'] = area
-    context['region'] = region
-    context['space_data'] = space
+    Direction, Direction of the sphere or cylinder
+        VIEW_ON_EQUATOR View on Equator, 3D view is on the equator.
+        VIEW_ON_POLES View on Poles, 3D view is on the poles.
+        ALIGN_TO_OBJECT Align to Object, Align according to object transform.
+    align (enum in ['POLAR_ZX', 'POLAR_ZY'], (optional)) –
 
-    space.region_3d.view_perspective = perspective
-    bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
-    bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
+    Align, How to determine rotation around the pole
+        POLAR_ZX Polar ZX, Polar 0 is X.
+        POLAR_ZY Polar ZY, Polar 0 is Y.
+    radius (float in [0, inf], (optional)) – Radius, Radius of the sphere or cylinder
+    correct_aspect (boolean, (optional)) – Correct Aspect, Map UVs taking image aspect ratio into account
+    clip_to_bounds (boolean, (optional)) – Clip to Bounds, Clip UV coordinates to bounds after unwrapping
+    scale_to_bounds (boolean, (optional)) – Scale to Bounds, Scale UV coordinates to bounds after unwrapping
 
+
+
+    """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    if view is not None:
+        rotate_view(view=view)
+
+    bpy.ops.uv.cylinder_project(
+        direction=direction, align=align, radius=radius,
+        correct_aspect=correct_aspect, clip_to_bounds=clip_to_bounds,
+        scale_to_bounds=scale_to_bounds)
+    bpy.ops.object.mode_set(mode="OBJECT")
     return None
 
 
-def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False,
-                         correct_aspect=True, scale_to_bounds=True):
-    """
-
-    This presumes that you are in EDIT mode and have the faces selected that
-    you wish to project
+def rotate_view(view='TOP', perspective='ORTHO'):
+    """ Rotate to a numpad view
 
     view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
     perspective (enum in ['ORTHO', 'PERSP']): perspective/orthographic projection
-
 
     http://blender.stackexchange.com/questions/34488/view3d-operations-problem
     """
@@ -651,25 +697,88 @@ def uv_project_from_view(view='TOP', perspective='ORTHO', camera_bounds=False,
     context['region'] = region
     context['space_data'] = space
 
-    # This swaps between orthographic and perspective projection
-    #bpy.ops.view3d.view_persportho(context, 'EXEC_DEFAULT')
-
     space.region_3d.view_perspective = perspective
 
     # This needs to be run twice, otherwise the projection will happen
-    # at some intermediate roation point.
+    # at some intermediate rotation point.
     # I'm not sure why this is.
     # Adding a time delay after this command has no impact on this
     # I'm also not sure what the 'EXEC_DEFAULT' argument does, or if it's really needed
     bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
     bpy.ops.view3d.viewnumpad(context, 'EXEC_DEFAULT', type=view)
 
+    return context
+
+
+def uv_project_from_view(mesh_object=None, view='TOP', perspective='ORTHO', camera_bounds=False,
+                         correct_aspect=True, scale_to_bounds=True):
+    """
+    If mesh_object is not None, then assume we're starting in OBJECT mode and will select all
+    vertices of the mesh object.
+
+    Otherwise, assume that we're in EDIT mode and have the faces selected that
+    we wish to project.
+
+    view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
+    perspective (enum in ['ORTHO', 'PERSP']): perspective/orthographic projection
+
+    """
+    if mesh_object is not None:
+        # Deselect All
+        bpy.ops.object.select_all(action='DESELECT')
+        # Select Source and make active
+        mesh_object.select = True
+        bpy.context.scene.objects.active = mesh_object
+
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+
+    context = rotate_view(view=view, perspective=perspective)
     bpy.ops.uv.project_from_view(context, 'EXEC_DEFAULT', camera_bounds=camera_bounds, correct_aspect=correct_aspect, scale_to_bounds=scale_to_bounds)
+
+    if mesh_object is not None:
+        bpy.ops.object.mode_set(mode="OBJECT")
+    return None
+
+
+def translate_uv(mesh_object=None, value=(0.0, 0.0)):
+    """ Translate mesh UV coordinates using bmesh
+
+    """
+    list(value)
+
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+
+    # Get a BMesh representation
+    bm = bmesh.new()
+    bm.from_mesh(mesh_object.data)
+
+    uv_lay = bm.loops.layers.uv.active
+
+    for face in bm.faces:
+        for loop in face.loops:
+            uv = loop[uv_lay].uv
+            # Scale about center point: S(x-c) + c
+            uv[0] = value[0] + uv[0]
+            uv[1] = value[1] + uv[1]
+
+    # Finish up, write the bmesh back to the mesh
+    bm.to_mesh(mesh_object.data)
+    bm.free()
     return None
 
 
 def scale_uv(mesh_object=None, value=(0.0, 0.0), center=(0.5, 0.5)):
-    """ Let's try this using bmesh """
+    """ Scale mesh UV coordinates using bmesh
+
+
+
+
+    """
     list(value)
     list(center)
 
@@ -785,14 +894,30 @@ def boolean(obj_src=None, operation='+', obj_trgt=None, solver='CARVE'):
     return None
 
 
-def measure_aabb(mesh_object):
-    """ Find the axis aligned bounding box of the mesh object"""
+def measure_aabb(mesh_object, coord_system='CARTESIAN'):
+    """ Find the axis aligned bounding box (aabb) of a mesh object
+    in multiple coordinate systems.
+
+    Args:
+        mesh_object: mesh object to measure
+        coord_system (enum in ['CARTESIAN', 'CYLINDRICAL']
+            Coordinate system to use:
+                'CARTESIAN': lists contain [x, y, z]
+                'CYLINDRICAL': lists contain [r, theta, z]
+    Returns:
+        dict: dictionary with the following aabb properties
+            min (3 element list): minimum values
+            max (3 element list): maximum values
+            center (3 element list): the center point
+            size (3 element list): size of the aabb in each coordinate (max-min)
+            diagonal (float): the diagonal of the aabb
+    """
     # Note that bound_box is not axis aligned. Will it be if all rotations are applied first?
 
-    # Convert boundign box corners from object space to world space
+    # Convert bounding box corners from object space to world space
     #bbox_corners = [ob.matrix_world * Vector(corner) for corner in ob.bound_box]
 
-    # Let's do this using veritces instead
+    # Let's do this using vertices instead
     """
     matrix_w = mesh_object.matrix_world
     vectors = [matrix_w * vertex.co for vertex in mesh_object.data.vertices]
@@ -802,24 +927,40 @@ def measure_aabb(mesh_object):
     """
 
     aabb = {'min': [999999.0, 999999.0, 999999.0], 'max': [-999999.0, -999999.0, -999999.0]}
-
     for vertex in mesh_object.data.vertices:
         # object vertices are in object space, translate to world space
         v_world = mesh_object.matrix_world * Vector((vertex.co[0], vertex.co[1], vertex.co[2]))
-
-        if v_world[0] < aabb['min'][0]:
-            aabb['min'][0] = v_world[0]
-        if v_world[1] < aabb['min'][1]:
-            aabb['min'][1] = v_world[1]
-        if v_world[2] < aabb['min'][2]:
-            aabb['min'][2] = v_world[2]
-        if v_world[0] > aabb['max'][0]:
-            aabb['max'][0] = v_world[0]
-        if v_world[1] > aabb['max'][1]:
-            aabb['max'][1] = v_world[1]
-        if v_world[2] > aabb['max'][2]:
-            aabb['max'][2] = v_world[2]
-
+        x_co = v_world[0]
+        y_co = v_world[1]
+        z_co = v_world[2]
+        if coord_system == 'CARTESIAN':
+            if x_co < aabb['min'][0]:
+                aabb['min'][0] = x_co
+            if y_co < aabb['min'][1]:
+                aabb['min'][1] = y_co
+            if z_co < aabb['min'][2]:
+                aabb['min'][2] = z_co
+            if x_co > aabb['max'][0]:
+                aabb['max'][0] = x_co
+            if y_co > aabb['max'][1]:
+                aabb['max'][1] = y_co
+            if z_co > aabb['max'][2]:
+                aabb['max'][2] = z_co
+        elif coord_system == 'CYLINDRICAL':
+            radius = math.sqrt(x_co**2 + y_co**2)
+            theta = math.degrees(math.atan2(y_co, x_co))
+            if radius < aabb['min'][0]:
+                aabb['min'][0] = radius
+            if theta < aabb['min'][1]:
+                aabb['min'][1] = theta
+            if z_co < aabb['min'][2]:
+                aabb['min'][2] = z_co
+            if radius > aabb['max'][0]:
+                aabb['max'][0] = radius
+            if theta > aabb['max'][1]:
+                aabb['max'][1] = theta
+            if z_co > aabb['max'][2]:
+                aabb['max'][2] = z_co
     aabb['center'] = [(aabb['max'][0] + aabb['min'][0]) / 2,
                       (aabb['max'][1] + aabb['min'][1]) / 2,
                       (aabb['max'][2] + aabb['min'][2]) / 2]

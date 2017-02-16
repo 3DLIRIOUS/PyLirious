@@ -231,3 +231,12 @@ def hollow_volume(fullpath_in, fullpath_out, log, offset=-3,
     write_mmpy.run(mix_script, log)
     
     return None
+
+
+def scale_meta2scale(scale_meta):
+    scale_meta_float = mlx.util.to_float(scale_meta)
+    if scale_meta_float < 0.0:
+        scale = -1.0 / scale_meta_float
+    else:
+        scale = scale_meta_float
+    return scale

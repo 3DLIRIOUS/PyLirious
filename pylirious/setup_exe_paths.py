@@ -63,6 +63,9 @@ def setup_exe_paths():
         if shutil.which('meshmixer') is None:
             if platform.system() == 'Windows':
                 add2path('C:\\Program Files\\Autodesk\\Meshmixer')
+        if shutil.which('inkscape') is None:
+            if platform.system() == 'Windows':
+                add2path('C:\\Program Files\\Inkscape')
     else:
         # If shutil.which is not available, skip checking path
         add2path('C:\\Program Files\\VCG\\MeshLab')
@@ -70,6 +73,7 @@ def setup_exe_paths():
         add2path('C:\\Program Files\\admesh')
         add2path('C:\\Program Files\\Blender Foundation\\Blender')
         add2path('C:\\Program Files\\Autodesk\\Meshmixer')
+        add2path('C:\\Program Files\\Inkscape')
 
 
 if __name__ == "__main__":
