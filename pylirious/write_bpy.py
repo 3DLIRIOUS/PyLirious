@@ -30,7 +30,7 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
     # TODO: can we automatically determine if a value is a string instead of having to use a hardcoded list?
     filename_args = ['file_in', 'file_out', 'image_file']
     str_args = ['axis', 'operation', 'method', 'tex_name', 'mat_name', 'view', 'perspective',
-                'coord_system']
+                'coord_system', 'solver']
 
     if function == 'uv_cylinder_project':
         str_args.append('direction')

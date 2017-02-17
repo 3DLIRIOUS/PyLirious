@@ -626,53 +626,6 @@ def uv_smart_project(mesh_object=None, angle_limit=66.0,
     return None
 
 
-def uv_cylinder_project(mesh_object=None, view=None, direction='VIEW_ON_EQUATOR',
-    align='POLAR_ZX', radius=1.0, correct_aspect=True, clip_to_bounds=False,
-    scale_to_bounds=True):
-    """ Project the UV vertices of the mesh over the curved wall of a cylinder
-
-    view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
-        Used to set view for direction
-
-    direction (enum in ['VIEW_ON_EQUATOR', 'VIEW_ON_POLES', 'ALIGN_TO_OBJECT'], (optional)) –
-
-    Direction, Direction of the sphere or cylinder
-        VIEW_ON_EQUATOR View on Equator, 3D view is on the equator.
-        VIEW_ON_POLES View on Poles, 3D view is on the poles.
-        ALIGN_TO_OBJECT Align to Object, Align according to object transform.
-    align (enum in ['POLAR_ZX', 'POLAR_ZY'], (optional)) –
-
-    Align, How to determine rotation around the pole
-        POLAR_ZX Polar ZX, Polar 0 is X.
-        POLAR_ZY Polar ZY, Polar 0 is Y.
-    radius (float in [0, inf], (optional)) – Radius, Radius of the sphere or cylinder
-    correct_aspect (boolean, (optional)) – Correct Aspect, Map UVs taking image aspect ratio into account
-    clip_to_bounds (boolean, (optional)) – Clip to Bounds, Clip UV coordinates to bounds after unwrapping
-    scale_to_bounds (boolean, (optional)) – Scale to Bounds, Scale UV coordinates to bounds after unwrapping
-
-
-
-    """
-    # Deselect All
-    bpy.ops.object.select_all(action='DESELECT')
-    # Select Source and make active
-    mesh_object.select = True
-    bpy.context.scene.objects.active = mesh_object
-
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-
-    if view is not None:
-        rotate_view(view=view)
-
-    bpy.ops.uv.cylinder_project(
-        direction=direction, align=align, radius=radius,
-        correct_aspect=correct_aspect, clip_to_bounds=clip_to_bounds,
-        scale_to_bounds=scale_to_bounds)
-    bpy.ops.object.mode_set(mode="OBJECT")
-    return None
-
-
 def rotate_view(view='TOP', perspective='ORTHO'):
     """ Rotate to a numpad view
 
@@ -738,6 +691,68 @@ def uv_project_from_view(mesh_object=None, view='TOP', perspective='ORTHO', came
 
     if mesh_object is not None:
         bpy.ops.object.mode_set(mode="OBJECT")
+    return None
+
+
+def uv_cylinder_project(mesh_object=None, view=None, direction='VIEW_ON_EQUATOR',
+    align='POLAR_ZX', radius=1.0, correct_aspect=True, clip_to_bounds=False,
+    scale_to_bounds=True):
+    """ Project the UV vertices of the mesh over the curved wall of a cylinder
+
+    view (enum in ['LEFT', 'RIGHT', 'BOTTOM', 'TOP', 'FRONT', 'BACK', 'CAMERA'])
+        Used to set view for direction
+
+    direction (enum in ['VIEW_ON_EQUATOR', 'VIEW_ON_POLES', 'ALIGN_TO_OBJECT'], (optional)) –
+
+    Direction, Direction of the sphere or cylinder
+        VIEW_ON_EQUATOR View on Equator, 3D view is on the equator.
+        VIEW_ON_POLES View on Poles, 3D view is on the poles.
+        ALIGN_TO_OBJECT Align to Object, Align according to object transform.
+    align (enum in ['POLAR_ZX', 'POLAR_ZY'], (optional)) –
+
+    Align, How to determine rotation around the pole
+        POLAR_ZX Polar ZX, Polar 0 is X.
+        POLAR_ZY Polar ZY, Polar 0 is Y.
+    radius (float in [0, inf], (optional)) – Radius, Radius of the sphere or cylinder
+    correct_aspect (boolean, (optional)) – Correct Aspect, Map UVs taking image aspect ratio into account
+    clip_to_bounds (boolean, (optional)) – Clip to Bounds, Clip UV coordinates to bounds after unwrapping
+    scale_to_bounds (boolean, (optional)) – Scale to Bounds, Scale UV coordinates to bounds after unwrapping
+
+
+
+    """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    if view is not None:
+        context = rotate_view(view=view)
+    else: # Get current context from 3D view instead
+        for area in bpy.context.screen.areas:
+            if area.type == "VIEW_3D":
+                break
+        for region in area.regions:
+            if region.type == "WINDOW":
+                break
+        space = area.spaces[0]
+        context = bpy.context.copy()
+        context['area'] = area
+        context['region'] = region
+        context['space_data'] = space
+
+    bpy.ops.uv.cylinder_project(
+        context, 'EXEC_DEFAULT',
+        direction=direction, align=align, radius=radius,
+        correct_aspect=correct_aspect, clip_to_bounds=clip_to_bounds,
+        scale_to_bounds=scale_to_bounds)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    #bpy.ops.uv.cylinder_project(context, direction='VIEW_ON_EQUATOR', scale_to_bounds=True)
     return None
 
 
@@ -823,7 +838,7 @@ def scale_uv_gui(value=(0.0, 0.0)):
     # insert UV specific transforms here
     bpy.ops.transform.resize(value=value, constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
 
-    # return to previouswindow for good measure ( and cleanliness )
+    # return to previous window for good measure (and cleanliness)
     bpy.context.area.type = original_area
     return None
 
@@ -845,6 +860,7 @@ def boolean(obj_src=None, operation='+', obj_trgt=None, solver='CARVE'):
             * = INTERSECT
         target (str): filename of mesh to act on the source
         output (str): filename to export the result to
+        solver (enum in ['BMESH', 'CARVE']): the boolean solver to use
 
     Returns:
         None
