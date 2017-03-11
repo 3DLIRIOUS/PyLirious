@@ -17,6 +17,9 @@ import bpy
 import bmesh
 from mathutils import Vector
 
+# http://blender.stackexchange.com/questions/58202/how-can-i-import-an-addon-into-a-blender-script
+import addon_utils
+
 # Sub-modules
 from . import filename
 
@@ -194,13 +197,13 @@ def export_mesh(mesh_object=None, file_out=None, texture=None, triangulate=True)
 def duplicate_mesh(mesh_object):
     """ Duplicate mesh object
     
-    This function is causeing blender to crash if we duplicate after
+    This function is causing blender to crash if we duplicate after
     performing a boolean. Why? It is the bpy.ops.object.duplicate
     function that causes it.
     Note that script still executes correctly.
     The problem is related to duplicating an object that is already a duplicate,
     e.g. duplicating, dropping colors, then duplicating again.
-    Workaround is to duplicate the orginal multiple times.
+    Workaround is to duplicate the original multiple times.
     """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
@@ -323,7 +326,7 @@ def separate(mesh_object):
 
 def plane_cut(mesh_object=None, axis='z', offset=0.0, direction=1,
               use_fill=True, clear_inner=True, clear_outer=False,
-              threshold=0.0001, triangulate=False):
+              threshold=0.0001, poke=False, triangulate=False):
     """ Plane cut using  the bisect operator
 
     Start mode: OBJECT
@@ -373,6 +376,10 @@ def plane_cut(mesh_object=None, axis='z', offset=0.0, direction=1,
         ystart=0,
         yend=0)
 
+    # poke newly created faces (put vertex at center); also triangulates, but usually
+    # better than normal triangulation
+    if use_fill and poke:
+        bpy.ops.mesh.poke(offset=0.0, use_relative_offset=False, center_mode="BOUNDS")
     # Triangulate faces
     if triangulate:
         bpy.ops.mesh.select_mode(type="FACE")
@@ -489,14 +496,15 @@ def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
     return None
 
 
-def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6):
+def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6, clear_selection=True):
     """ Select all vertices on the XY plane (Z = 0) and extrude"""
     select_plane(
         mesh_object=mesh_object,
         axis='z',
         offset=0.0,
         threshold=threshold,
-        method='FACE')
+        method='FACE',
+        clear_selection=clear_selection)
 
     # Extrude bottom
     bpy.ops.mesh.extrude_region_move(
@@ -528,6 +536,54 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
 
     # Switch to OBJECT mode
     bpy.ops.object.mode_set(mode='OBJECT')
+    return None
+
+
+def tex2vc(mesh_object, alpha_color=(0, 0, 0), replace_active_layer=True,
+    mappingMode='CLIP', blendingMode='MULTIPLY', mirror_x=False, mirror_y=False):
+    """Transfer texture colors to vertex colors
+
+    alpha_color: betweeon 0 and 1
+    replace_active_layer (bool)
+    mappingMode (enum in 'CLIP', 'REPEAT', 'EXTEND')
+    blendingMode (enum in ['MIX', 'ADD', 'SUBTRACT', 'MULTIPLY', 'SCREEN',
+        'OVERLAY', 'DIFFERENCE', 'DIVIDE', 'DARKEN', 'LIGHTEN', 'HUE',
+        'SATURATION', 'VALUE', 'COLOR', 'SOFT_LIGHT', 'LINEAR_LIGHT'])
+    mirror_x (bool)
+    mirror_y (bool)
+    """
+    # Deselect All
+    bpy.ops.object.select_all(action='DESELECT')
+    # Select Source and make active
+    mesh_object.select = True
+    bpy.context.scene.objects.active = mesh_object
+
+    # http://blender.stackexchange.com/questions/15638/how-to-distinguish-between-addon-is-not-installed-and-addon-is-not-enabled
+    mod = None
+    addon_name = 'uv_bake_texture_to_vcols'
+    if addon_name not in addon_utils.addons_fake_modules:
+        print("%s: Addon not installed." % addon_name)
+    else:
+        is_enabled, is_loaded = addon_utils.check(addon_name)
+        if not is_loaded:
+            try:
+                mod = addon_utils.enable(addon_name, default_set=False, persistent=False)
+            except:
+                print("%s: Could not enable Addon on the fly." % addon_name )
+    if mod:
+        print("%s: enabled and running." % addon_name)
+
+    """
+    # Ensure that uv_bake_texture_to_vcols add-on is loaded and enabled
+    is_enabled, is_loaded = addon_utils.check('uv_bake_texture_to_vcols')
+    if not is_enabled:
+        #print("%s enabled" % addon)
+        addon_utils.enable('uv_bake_texture_to_vcols')
+    """
+
+    bpy.context.scene.uv_bake_alpha_color = alpha_color
+    bpy.ops.uv.bake_texture_to_vcols(replace_active_layer=replace_active_layer, mappingMode=mappingMode, blendingMode=blendingMode, mirror_x=mirror_x, mirror_y=mirror_y)
+
     return None
 
 

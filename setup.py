@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pylirious',
-      version='20160724c',
+      version='20170311',
       description='3D model creation and processing with Python',
       url='https://github.com/3DLIRIOUS/pylirious',
       author='3DLirious',

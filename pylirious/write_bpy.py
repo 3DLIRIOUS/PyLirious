@@ -34,6 +34,9 @@ def write_bpyfunc(return_vars=None, script=None, function=None, **kwargs):
 
     if function == 'uv_cylinder_project':
         str_args.append('direction')
+    if function == 'tex2vc':
+        str_args.append('mappingMode')
+        str_args.append('blendingMode')
 
     script_file = open(script, 'a')
     if kwargs is not None:
@@ -175,6 +178,15 @@ def extrude_plane(return_vars=None,
                   script='TEMP3D_blender_default.py', **kwargs):
     """ Run the same function in bpylirious and return return_vars"""
     function = 'extrude_plane'
+    write_bpyfunc(return_vars=return_vars, script=script,
+                  function=function, **kwargs)
+    return return_vars
+
+
+def tex2vc(return_vars=None,
+                  script='TEMP3D_blender_default.py', **kwargs):
+    """ Run the same function in bpylirious and return return_vars"""
+    function = 'tex2vc'
     write_bpyfunc(return_vars=return_vars, script=script,
                   function=function, **kwargs)
     return return_vars

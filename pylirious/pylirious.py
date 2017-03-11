@@ -93,10 +93,14 @@ def swap_yz(file_in, file_out=None, log=None):
         file_out = '%s(%s%s).%s' % (fprefix, scale_meta, up_meta, fext)
     script = 'TEMP3D_swapYZ.mlx'
 
+    _, texture_files_unique, _ = mlx.find_texture_files(fbasename=file_in, log=log)
+    texture = bool(len(texture_files_unique) > 0)
+    output_mask = mlx.default_output_mask(file_out=file_out, texture=texture)
+
     mlx.begin(script, file_in=file_in)
     mlx.transform.rotate(script, axis='x', angle=angle)
     mlx.end(script)
-    mlx.run(log=log, file_in=file_in, file_out=file_out, script=script)
+    mlx.run(log=log, file_in=file_in, file_out=file_out, script=script, output_mask=output_mask)
     return file_out
 
 
@@ -194,10 +198,11 @@ def setup(sys_argv):
     return fpath, fbasename, scriptname, log
 
 
-def hollow_volume(fullpath_in, fullpath_out, log, offset=-3,
-                  solid_resolution=128, mesh_resolution=128):
+def hollow_volume(fullpath_in, fullpath_out, log=None, offset=-3,
+                  solid_resolution=128, mesh_resolution=128,
+                  del_small_parts=False, small_part_ratio=0.1):
     """ Create hollow (offset) volume using MeshMixer
-    
+
     Make Solid approximates your object with small cubes (voxels).
     This approximation actually happens twice. First we voxelize
     the shape using solid_resolution as the sampling rate. Then we
@@ -206,6 +211,9 @@ def hollow_volume(fullpath_in, fullpath_out, log, offset=-3,
     voxelization. These sampling rates can be the same, but they do
     not have to be.
     -- MeshMixer manual
+
+    WARNING: hard coded output mask, must be updated when MeshLab version is
+
     """
     mix_script = 'TEMP3D_mix_hollow.py'
 
@@ -230,10 +238,37 @@ def hollow_volume(fullpath_in, fullpath_out, log, offset=-3,
     write_mmpy.end(mix_script)
     write_mmpy.run(mix_script, log)
     
+    # When hollowing Kylechessking_flat(-11Z).obj it was found that Blender
+    # could not open the hollow volume; error was:
+    # ValueError: could not convert string to float: b'-1.#IND'
+    # The file had vertex normals in sci notation, i.e. -2.086671657e-006
+    # however, did not verify if this was the issue.
+    # MeshLab can open them fine, so we will re-save with MeshLab. Even if we
+    # determine the root cause, MeshMixer doesn't have many export options,
+    # so this is still probably the easiest way to fix.
+
+    # MeshMixer may also create multiple volumes, so we provide the option to delete small components
+
+    # Convert to binary stl and drop colors with MeshLab
+    #
+    file_out = os.path.basename(fullpath_out)
+    output_mask = mlx.default_output_mask(file_out=file_out, texture=False)
+    if del_small_parts:
+        ml_script = 'TEMP3D_hollow.mlx'
+        mlx.begin(script=ml_script, file_in=file_out)
+        mlx.delete.small_parts(script=ml_script, ratio=small_part_ratio)
+        mlx.end(script=ml_script)
+    else:
+        ml_script = None
+
+    mlx.run(log=log, file_in=file_out, file_out=file_out,
+            script=ml_script, output_mask=output_mask)
+
     return None
 
 
 def scale_meta2scale(scale_meta):
+    """ Convert scale_meta (metadata scale value) to actual scale """
     scale_meta_float = mlx.util.to_float(scale_meta)
     if scale_meta_float < 0.0:
         scale = -1.0 / scale_meta_float
