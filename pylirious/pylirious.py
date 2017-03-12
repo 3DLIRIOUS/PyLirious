@@ -135,14 +135,15 @@ def blend(module_function=None, log=None, module_path=None, cmd=None):
             else:
                 module_full = os.path.join(module_path, module + '.py')
             function = '.'.join(module_function.split('.')[1:]).split('(')[0]
-            parameters = module_function.split('(')[1].rsplit(')')[
-                0].replace(', ', ' ')
+            #parameters = module_function.split('(')[1].rsplit(')')[
+            #    0].replace(', ', ' ')
+            parameters = ')'.join('('.join(module_function.split('(')[1:]).rsplit(')')[:-1]).replace(', ', ' ')
             cmd += ' %s -- -f %s -p %s' % (module_full, function, parameters)
     if log is not None:
         log_file = open(log, 'a')
         if parameters is not None:
             log_file.write('\nBlender Python module and function:\n')
-            log_file.write('%s.%s(%s)\n' %
+            log_file.write('    %s.%s(%s)\n' %
                            (module, function, parameters.replace(' ', ', ')))
         log_file.write('cmd = %s\n' % cmd)
         log_file.write('***START OF BLENDER STDOUT & STDERR***\n')
@@ -152,8 +153,6 @@ def blend(module_function=None, log=None, module_path=None, cmd=None):
         log_file = None
         print('blender cmd = %s' % cmd)
         print('***START OF BLENDER STDOUT & STDERR***')
-    # subprocess.Popen( meshlabserver,
-    #return_code = subprocess.call( [meshlabserver, '-i' + i])
     while True:
         return_code = subprocess.call(cmd, shell=True, stdout=log_file,
                                       stderr=log_file, universal_newlines=True)

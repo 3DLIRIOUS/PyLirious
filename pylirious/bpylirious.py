@@ -23,6 +23,7 @@ import addon_utils
 # Sub-modules
 from . import filename
 
+# TODO: add baking functions, bake texture to texture, vertex colors to texture
 
 def begin():
     """Start of new Blender script; set the scene and clear existing objects"""
@@ -378,13 +379,14 @@ def plane_cut(mesh_object=None, axis='z', offset=0.0, direction=1,
 
     # poke newly created faces (put vertex at center); also triangulates, but usually
     # better than normal triangulation
-    if use_fill and poke:
-        bpy.ops.mesh.poke(offset=0.0, use_relative_offset=False, center_mode="BOUNDS")
-    # Triangulate faces
-    if triangulate:
-        bpy.ops.mesh.select_mode(type="FACE")
-        bpy.ops.mesh.quads_convert_to_tris(
-            quad_method='BEAUTY', ngon_method='BEAUTY')
+    if use_fill:
+        if poke:
+            bpy.ops.mesh.poke(offset=0.0, use_relative_offset=False, center_mode="BOUNDS")
+        # Triangulate faces
+        elif triangulate:
+            bpy.ops.mesh.select_mode(type="FACE")
+            bpy.ops.mesh.quads_convert_to_tris(
+                quad_method='BEAUTY', ngon_method='BEAUTY')
 
     # Switch to object mode
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -540,7 +542,8 @@ def extrude_plane(mesh_object=None, center=(0.0, 0.0, 0.0),
 
 
 def tex2vc(mesh_object, alpha_color=(0, 0, 0), replace_active_layer=True,
-    mappingMode='CLIP', blendingMode='MULTIPLY', mirror_x=False, mirror_y=False):
+    mappingMode='CLIP', blendingMode='MULTIPLY', mirror_x=False, mirror_y=False,
+    del_tex=True):
     """Transfer texture colors to vertex colors
 
     alpha_color: betweeon 0 and 1
@@ -551,6 +554,7 @@ def tex2vc(mesh_object, alpha_color=(0, 0, 0), replace_active_layer=True,
         'SATURATION', 'VALUE', 'COLOR', 'SOFT_LIGHT', 'LINEAR_LIGHT'])
     mirror_x (bool)
     mirror_y (bool)
+    del_tex (bool): delete texture and material after conversion
     """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
@@ -558,6 +562,7 @@ def tex2vc(mesh_object, alpha_color=(0, 0, 0), replace_active_layer=True,
     mesh_object.select = True
     bpy.context.scene.objects.active = mesh_object
 
+    """
     # http://blender.stackexchange.com/questions/15638/how-to-distinguish-between-addon-is-not-installed-and-addon-is-not-enabled
     mod = None
     addon_name = 'uv_bake_texture_to_vcols'
@@ -572,18 +577,18 @@ def tex2vc(mesh_object, alpha_color=(0, 0, 0), replace_active_layer=True,
                 print("%s: Could not enable Addon on the fly." % addon_name )
     if mod:
         print("%s: enabled and running." % addon_name)
-
     """
     # Ensure that uv_bake_texture_to_vcols add-on is loaded and enabled
     is_enabled, is_loaded = addon_utils.check('uv_bake_texture_to_vcols')
     if not is_enabled:
         #print("%s enabled" % addon)
         addon_utils.enable('uv_bake_texture_to_vcols')
-    """
 
     bpy.context.scene.uv_bake_alpha_color = alpha_color
     bpy.ops.uv.bake_texture_to_vcols(replace_active_layer=replace_active_layer, mappingMode=mappingMode, blendingMode=blendingMode, mirror_x=mirror_x, mirror_y=mirror_y)
 
+    if del_tex:
+        remove_tex_color(mesh_object=mesh_object)
     return None
 
 
@@ -1043,6 +1048,25 @@ def measure_aabb(mesh_object, coord_system='CARTESIAN'):
         aabb['size'][1]**2 +
         aabb['size'][2]**2)
     return aabb
+
+
+def measure_mesh():
+    """ Measure various mesh properties. Will include:
+        Number of verts, edges and faces
+        Bounding box, incl. center and size
+        Surface area
+        Volume        
+        Centroid
+        Center of Mass
+        Number of parts
+        Euler Number
+        Genus
+        
+        Could also add other checks from the 3D printing toolbox
+        
+    """
+
+    pass
 
 
 def main():
