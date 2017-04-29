@@ -15,14 +15,14 @@ THIS_SCRIPTPATH = os.path.dirname(
     os.path.realpath(
         inspect.getsourcefile(
             lambda: 0)))
-sys.path.append(
-    os.path.join(
+sys.path.insert(
+    0, os.path.join(
         THIS_SCRIPTPATH,
         'mm-api',
         'distrib',
         'python'))
-sys.path.append(
-    os.path.join(
+sys.path.insert(
+    0, os.path.join(
         THIS_SCRIPTPATH,
         'mm-api',
         'python'))

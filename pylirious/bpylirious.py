@@ -170,6 +170,8 @@ def export_mesh(mesh_object=None, file_out=None, texture=None, triangulate=True)
         if texture is None:
             texture = False
         if triangulate:
+            # TODO: this will triangulate the source mesh, which may not be what you want.
+            # Should duplicate the mesh first.
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.select_all(action='SELECT')
             bpy.ops.mesh.quads_convert_to_tris(

@@ -141,10 +141,12 @@ def blend(module_function=None, log=None, module_path=None, cmd=None):
             cmd += ' %s -- -f %s -p %s' % (module_full, function, parameters)
     if log is not None:
         log_file = open(log, 'a')
+        """
         if parameters is not None:
             log_file.write('\nBlender Python module and function:\n')
             log_file.write('    %s.%s(%s)\n' %
                            (module, function, parameters.replace(' ', ', ')))
+        """
         log_file.write('cmd = %s\n' % cmd)
         log_file.write('***START OF BLENDER STDOUT & STDERR***\n')
         log_file.close()
