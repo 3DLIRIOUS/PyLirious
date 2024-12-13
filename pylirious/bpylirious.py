@@ -104,6 +104,10 @@ def import_mesh(file_in=None):
 
 
 def export_mesh(mesh_object=None, file_out=None, texture=None, triangulate=True):
+    """
+
+    blend: saves as blend file, all other options are ignored
+    """
     # Deselect All
     bpy.ops.object.select_all(action='DESELECT')
     # Select Source and make active
@@ -187,6 +191,12 @@ def export_mesh(mesh_object=None, file_out=None, texture=None, triangulate=True)
             use_uv_coords=texture,
             use_colors=True,
             global_scale=1.0)
+    elif fext == 'blend':
+        bpy.ops.wm.save_as_mainfile(
+            filepath=file_out,
+            check_existing=True,
+            compress=False,
+            relative_remap=True)
     else:
         print('Error: filetype "%s" is not supported. Exiting ...' % fext)
         sys.exit(1)
@@ -278,11 +288,14 @@ def scale(mesh_object=None, value=(0.0, 0.0, 0.0), apply=True):
 
 
 def join(objects=None):
-    """ Join objects. Objects must be iterable (list, tuple, etc.) """
+    """ Join selected objects into first object. Objects must be iterable (list, tuple, etc.) """
     # Deselect All
+    print('objects = {}'.format(objects))
+    
     bpy.ops.object.select_all(action='DESELECT')
     for mesh_object in objects:
         mesh_object.select = True
+    bpy.context.scene.objects.active = objects[0]
 
     bpy.ops.object.join()
     return None
@@ -500,7 +513,7 @@ def spherical_select(mesh_object=None, center=(0.0, 0.0, 0.0),
     return None
 
 
-def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6, clear_selection=True):
+def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6, angle=1, clear_selection=True):
     """ Select all vertices on the XY plane (Z = 0) and extrude"""
     select_plane(
         mesh_object=mesh_object,
@@ -509,6 +522,9 @@ def extrude_bottom(mesh_object=None, threshold=0.00001, distance=6, clear_select
         threshold=threshold,
         method='FACE',
         clear_selection=clear_selection)
+
+    # Select linked flat faces
+    bpy.ops.mesh.faces_select_linked_flat(sharpness=math.radians(angle))
 
     # Extrude bottom
     bpy.ops.mesh.extrude_region_move(
