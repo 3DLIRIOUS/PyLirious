@@ -17,6 +17,10 @@ import meshlabxml as mlx
 from . import filename
 from . import write_mmpy
 
+#ml_version = '1.3.4BETA'
+#ml_version = '2016.12'
+ml_version = '2020.09'
+
 def render_scad(script=None, log=None, file_out=None, constants=None):
     """Run openscad and render a scad script to an output file.
 
@@ -75,13 +79,15 @@ def run_admesh():
     pass
 
 
-def swap_yz(file_in, file_out=None, log=None):
+def swap_yz(file_in, file_out=None, log=None, ml_version=ml_version):
     """ Swap a mesh "Up" direction betwenn "Y" and "Z" axes.
 
     Requires metadata to know what the current "Up" direction is.
 
     """
     fprefix, scale_meta, up_meta, fext = filename.check_metadata(file_in)
+    #script_file = None # Use automatically created temporary script file
+    script_file = 'TEMP3D_swap_yz.mlx'
     if up_meta.upper() == 'Y':  # Y to Z: rotate 90d about X
         up_meta = 'Z'
         angle = 90.0
@@ -91,16 +97,18 @@ def swap_yz(file_in, file_out=None, log=None):
 
     if file_out is None:
         file_out = '%s(%s%s).%s' % (fprefix, scale_meta, up_meta, fext)
-    script = 'TEMP3D_swapYZ.mlx'
 
-    _, texture_files_unique, _ = mlx.find_texture_files(fbasename=file_in, log=log)
-    texture = bool(len(texture_files_unique) > 0)
-    output_mask = mlx.default_output_mask(file_out=file_out, texture=texture)
-
-    mlx.begin(script, file_in=file_in)
-    mlx.transform.rotate(script, axis='x', angle=angle)
-    mlx.end(script)
-    mlx.run(log=log, file_in=file_in, file_out=file_out, script=script, output_mask=output_mask)
+    _, _, _, colors = mlx.find_texture_files(fbasename=file_in, log=log)
+    output_mask = mlx.default_output_mask(file_out=file_out,
+                                          texture=colors['texture'],
+                                          vert_colors=colors['vert_colors'],
+                                          face_colors=colors['face_colors'],
+                                          vert_normals=False)
+    swap_yz = mlx.FilterScript(file_in=file_in, file_out=file_out, ml_version=ml_version)
+    mlx.transform.rotate2(swap_yz, axis='x', angle=angle) #rotate2 is the built-in rotation
+    if script_file is not None:
+        swap_yz.save_to_file(script_file)
+    swap_yz.run_script(output_mask=output_mask, log=log, script_file=script_file)
     return file_out
 
 
@@ -167,7 +175,7 @@ def blend(module_function=None, log=None, module_path=None, cmd=None):
     return return_code
 
 
-def setup(sys_argv):
+def setup(sys_argv, create_log=True):
     """Process arguments and create log file.
 
     Will also change into the directory of the first argument.
@@ -187,21 +195,25 @@ def setup(sys_argv):
     os.chdir(fpath)
     fbasename = os.path.basename(sys_argv[1])
     scriptname = os.path.basename(sys.argv[0])
-    log = 'log_file-%s-%s.txt' % (
-        os.path.splitext(scriptname)[0].strip(),
-        datetime.now().strftime("%Y.%m.%d-%H.%M.%S"))
-    log_file = open(log, 'w')
-    log_file.write('%s\n' % sys.version)
-    log_file.write('sys.argv = %s\n' % sys_argv)
-    log_file.write('fpath (working directory) = %s\n' % fpath)
-    log_file.write('fbasename = %s\n\n' % fbasename)
-    log_file.close()
+    if create_log:
+        log = 'log_file-%s-%s.txt' % (
+            os.path.splitext(scriptname)[0].strip(),
+            datetime.now().strftime("%Y.%m.%d-%H.%M.%S"))
+        log_file = open(log, 'w')
+        log_file.write('%s\n' % sys.version)
+        log_file.write('sys.argv = %s\n' % sys_argv)
+        log_file.write('fpath (working directory) = %s\n' % fpath)
+        log_file.write('fbasename = %s\n\n' % fbasename)
+        log_file.close()
+    else:
+        log = None
     return fpath, fbasename, scriptname, log
 
 
 def hollow_volume(fullpath_in, fullpath_out, log=None, offset=-3,
-                  solid_resolution=128, mesh_resolution=128,
-                  del_small_parts=False, small_part_ratio=0.1):
+                  solid_resolution=256, mesh_resolution=256,
+                  del_small_parts=False, small_part_ratio=0.1,
+                  ml_version=ml_version):
     """ Create hollow (offset) volume using MeshMixer
 
     Make Solid approximates your object with small cubes (voxels).
@@ -238,7 +250,7 @@ def hollow_volume(fullpath_in, fullpath_out, log=None, offset=-3,
         file_out=fullpath_out)
     write_mmpy.end(mix_script)
     write_mmpy.run(mix_script, log)
-    
+
     # When hollowing Kylechessking_flat(-11Z).obj it was found that Blender
     # could not open the hollow volume; error was:
     # ValueError: could not convert string to float: b'-1.#IND'
@@ -250,20 +262,13 @@ def hollow_volume(fullpath_in, fullpath_out, log=None, offset=-3,
 
     # MeshMixer may also create multiple volumes, so we provide the option to delete small components
 
-    # Convert to binary stl and drop colors with MeshLab
-    #
     file_out = os.path.basename(fullpath_out)
-    output_mask = mlx.default_output_mask(file_out=file_out, texture=False)
-    if del_small_parts:
-        ml_script = 'TEMP3D_hollow.mlx'
-        mlx.begin(script=ml_script, file_in=file_out)
-        mlx.delete.small_parts(script=ml_script, ratio=small_part_ratio)
-        mlx.end(script=ml_script)
-    else:
-        ml_script = None
+    output_mask = mlx.default_output_mask(file_out=file_out, texture=False, vert_colors=False)
 
-    mlx.run(log=log, file_in=file_out, file_out=file_out,
-            script=ml_script, output_mask=output_mask)
+    mlx_resave = mlx.FilterScript(file_in=file_out, file_out=file_out, ml_version=ml_version)
+    if del_small_parts:
+        mlx.delete.small_parts(mlx_resave, ratio=small_part_ratio)
+    mlx_resave.run_script(output_mask=output_mask, log=log)
 
     return None
 
