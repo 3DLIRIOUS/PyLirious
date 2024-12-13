@@ -155,7 +155,8 @@ def run(script='TEMP3D_mix_default.py', log=None):
         mm_proc = subprocess.Popen(['meshmixer'], stdout=log_file,
                                    stderr=log_file, universal_newlines=True)
 
-        if log is not None:
+        if False:
+        #if log is not None:
             # Read log_file to see when MeshMixer has finished opening and is
             # ready to process script
             mm_ready = False
@@ -166,7 +167,11 @@ def run(script='TEMP3D_mix_default.py', log=None):
                     # print(line)
                     # Looks like gaManager needs an internet connection. Use a different line.
                     # if '[gaManager] success!' in line:
-                    if '[Setting up global event filter]' in line:
+                    
+                    # MeshMixer 3.0:
+                    #if '[Setting up global event filter]' in line:
+                    # MeshMixer 3.2:
+                    if 'GraphicsViewScene3D::Initialize drawFboId:' in line:
                         mm_ready = True
                 # log_file.seek(0,2) # Go to the end of the file
                 time.sleep(0.1)
