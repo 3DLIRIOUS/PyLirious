@@ -30,51 +30,44 @@ import platform
 # TODO: add additional platform specific default locations,
 # e.g. Linux & MacOS
 if platform.system() == 'Windows':
+    openscad_path = 'C:\\Program Files\\OpenSCAD'
+    meshmixer_path = 'C:\\Program Files\\Autodesk\\Meshmixer'
+    inkscape_path = 'C:\\Program Files\\Inkscape\\bin'    
+
     #meshlabserver_path = 'C:\\Program Files\\VCG\\MeshLab'
     meshlabserver_path = 'K:\\shared\\software\\3D\\MeshLab\\MeshLab2020.09-windows'
-    openscad_path = 'C:\\Program Files\\OpenSCAD'
-    admesh_path = 'C:\\Program Files\\admesh'
     #blender_path = 'C:\\Program Files\\Blender Foundation\\Blender'
     blender_path = 'K:\\shared\\software\\3D\\Blender\\Blender_Portable\\blender-2.79b-windows64'
-    meshmixer_path = 'C:\\Program Files\\Autodesk\\Meshmixer'
-    inkscape_path = 'C:\\Program Files\\Inkscape'
+
+    potrace_path = 'K:\\shared\\software\\2D\\potrace\\potrace-1.16.win64'
+    apngopt_path = 'K:\\shared\\software\\2D\\apngopt\\apngopt-1.4-bin-win32'
+    ffmpeg_path = 'K:\\shared\\software\\2D\\ffmpeg\\ffmpeg-7.1-full_build\\bin'
+    
     pstoedit_path = 'C:\\Program Files\\pstoedit'
+    admesh_path = 'K:\\shared\\software\\3D\\admesh\\admesh-win64-0.98.2'
 
-
-def add2path(newpath):
-    """Add newpath to the system PATH environment variable."""
-    if newpath not in os.environ['PATH']:
-        #os.environ['PATH'] = newpath + os.pathsep + os.environ['PATH']
-        os.environ['PATH'] += os.pathsep + newpath
-
+def add2path(cmd, newpath):
+    """Add `newpath` to the system PATH environment variable."""
+    """Only add to path if `cmd` does not already exist in path"""
+    if shutil.which(cmd) is None:
+        if newpath not in os.environ['PATH']:
+            #os.environ['PATH'] = newpath + os.pathsep + os.environ['PATH']
+            os.environ['PATH'] += os.pathsep + newpath
 
 def setup_exe_paths():
     """Add external dependencies to the system path."""
-    if sys.version.split()[0] >= '3.3':
-        if shutil.which('meshlabserver') is None:
-            add2path(meshlabserver_path)
-        if shutil.which('openscad') is None:
-            add2path(openscad_path)
-        if shutil.which('admesh') is None:
-            add2path(admesh_path)
-        if shutil.which('blender') is None:
-            add2path(blender_path)
-        if shutil.which('meshmixer') is None:
-            add2path(meshmixer_path)
-        if shutil.which('inkscape') is None:
-            add2path(inkscape_path)
-        if shutil.which('pstoedit') is None:
-            add2path(pstoedit_path)
-    else:
-        # If shutil.which is not available, skip checking path
-        add2path(meshlabserver_path)
-        add2path(openscad_path)
-        add2path(admesh_path)
-        add2path(blender_path)
-        add2path(meshmixer_path)
-        add2path(inkscape_path)
-        add2path(pstoedit_path)
+    add2path('openscad', openscad_path)
+    add2path('meshmixer', meshmixer_path)
+    add2path('inkscape', inkscape_path)
+    add2path('meshlabserver', meshlabserver_path)
+    add2path('blender', blender_path)
 
+    add2path('potrace', potrace_path)
+    add2path('apngopt', apngopt_path)
+    add2path('ffmpeg', ffmpeg_path)
+
+    add2path('pstoedit', pstoedit_path)
+    add2path('admesh', admesh_path)
 
 if __name__ == "__main__":
     setup_exe_paths()
